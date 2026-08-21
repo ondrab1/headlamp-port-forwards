@@ -11,11 +11,18 @@
 import fs from 'node:fs';
 import process from 'node:process';
 
-const manifest = fs.readFileSync('artifacthub-pkg.yml', 'utf8').split('\n');
+const manifestPath = process.argv[2];
+
+if (!manifestPath) {
+  console.error('Usage: node scripts/release-notes.mjs <path to artifacthub-pkg.yml>');
+  process.exit(1);
+}
+
+const manifest = fs.readFileSync(manifestPath, 'utf8').split('\n');
 const start = manifest.findIndex(line => line.trimEnd() === 'changes:');
 
 if (start === -1) {
-  console.error('No `changes:` block in artifacthub-pkg.yml.');
+  console.error(`No \`changes:\` block in ${manifestPath}.`);
   process.exit(1);
 }
 
@@ -39,7 +46,7 @@ for (const line of manifest.slice(start + 1)) {
 }
 
 if (changes.length === 0) {
-  console.error('The `changes:` block is empty.');
+  console.error(`The \`changes:\` block in ${manifestPath} is empty.`);
   process.exit(1);
 }
 

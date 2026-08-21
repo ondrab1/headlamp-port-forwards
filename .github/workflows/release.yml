@@ -65,7 +65,7 @@ jobs:
         run: |
           # The changelog comes from artifacthub-pkg.yml so the release and the
           # plugin catalog describe the same thing.
-          node scripts/release-notes.mjs > notes.md
+          node scripts/release-notes.mjs artifacthub-pkg.yml > notes.md
 
           cat >> notes.md <<EOF
 
@@ -108,12 +108,12 @@ jobs:
           open(path, 'w').write(updated)
           PY
 
-          if git diff --quiet artifacthub-pkg.yml; then
+          if git diff --quiet; then
             echo "Nothing to commit."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Record release checksum for $GITHUB_REF_NAME" artifacthub-pkg.yml
+          git commit -am "Record release checksum for $GITHUB_REF_NAME"
           git push origin main

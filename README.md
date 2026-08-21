@@ -113,11 +113,11 @@ build is running.
 
 Releases are built by CI. For each one:
 
-1. Add what changed to the `changes:` list in `artifacthub-pkg.yml`, with a `kind` of `added`,
-   `changed`, `fixed` or `removed`. That list is the changelog — Headlamp's plugin catalog shows it,
-   and the GitHub release notes are rendered from it, so it is not written twice.
-2. Bump the version in `package.json` and in `artifacthub-pkg.yml`, including the tarball name in
-   `archive-url`.
+1. Update `artifacthub-pkg.yml`: `version`, the tarball name in `archive-url`, and the `changes:`
+   list (`kind` of `added`, `changed`, `fixed` or `removed`). That list is the changelog — Headlamp's
+   plugin catalog shows it and the GitHub release notes are rendered from it, so it is not written
+   twice.
+2. Bump `version` in `package.json` to match.
 3. Push a tag:
 
 ```bash
