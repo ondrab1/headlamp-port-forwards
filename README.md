@@ -111,8 +111,14 @@ build is running.
 
 ## Releasing
 
-Releases are built by CI. Bump the version in `package.json` and in `artifacthub-pkg.yml`
-(including the tarball name in `archive-url`), then push a tag:
+Releases are built by CI. For each one:
+
+1. Add what changed to the `changes:` list in `artifacthub-pkg.yml`, with a `kind` of `added`,
+   `changed`, `fixed` or `removed`. That list is the changelog — Headlamp's plugin catalog shows it,
+   and the GitHub release notes are rendered from it, so it is not written twice.
+2. Bump the version in `package.json` and in `artifacthub-pkg.yml`, including the tarball name in
+   `archive-url`.
+3. Push a tag:
 
 ```bash
 git tag v0.1.0
@@ -120,9 +126,9 @@ git push origin v0.1.0
 ```
 
 The workflow refuses to release if the tag and those two versions disagree, then runs the checks,
-builds the tarball, publishes the release with it, and commits the artifact's sha256 back into
-`artifacthub-pkg.yml` on `main`. ArtifactHub reads that manifest and feeds Headlamp's in-app plugin
-catalog.
+builds the tarball, publishes the release with notes rendered from the changelog, and commits the
+artifact's sha256 back into `artifacthub-pkg.yml` on `main`. ArtifactHub reads that manifest and
+feeds Headlamp's in-app plugin catalog.
 
 Building the tarball in CI is deliberate: `tar` records file timestamps, so every build produces a
 different checksum. A checksum taken from a local build would not match the file attached to the

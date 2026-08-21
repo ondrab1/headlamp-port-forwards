@@ -63,9 +63,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cat > notes.md <<EOF
-          Install by downloading \`${{ steps.artifact.outputs.file }}\` below, or through
-          Headlamp's plugin catalog once ArtifactHub has picked this version up.
+          # The changelog comes from artifacthub-pkg.yml so the release and the
+          # plugin catalog describe the same thing.
+          node scripts/release-notes.mjs > notes.md
+
+          cat >> notes.md <<EOF
+
+          ## Install
+
+          Download \`${{ steps.artifact.outputs.file }}\` below, or install through Headlamp's
+          plugin catalog once ArtifactHub has picked this version up.
 
           \`\`\`
           sha256: ${{ steps.artifact.outputs.checksum }}
@@ -75,8 +82,7 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             "${{ steps.artifact.outputs.file }}" \
             --title "$GITHUB_REF_NAME" \
-            --notes-file notes.md \
-            --generate-notes
+            --notes-file notes.md
 
       # ArtifactHub reads the manifest from the default branch, not from the tag,
       # so the checksum of the artifact just published has to land on main.
