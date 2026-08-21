@@ -43,4 +43,4 @@ annotations:
   headlamp/plugin/archive-checksum: "SHA256:7031e9a47ca25eca6d827fb50c8f4d0d792f9f6a2b568add4c9bbd7b056f12fa"
   headlamp/plugin/version-compat: ">=0.30"
   # Port forwarding is only available in the desktop app.
-  headlamp/plugin/distro-compat: "desktop"
+  headlamp/plugin/distro-compat: "linux,windows,mac"
