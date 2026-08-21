@@ -40,7 +40,7 @@ changes:
 annotations:
   # Fill in after creating the GitHub release; the checksum is printed by `npm run package`.
   headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.0/persistent-port-forwards-0.1.0.tar.gz"
-  headlamp/plugin/archive-checksum: "SHA256:REPLACE_WITH_CHECKSUM"
+  headlamp/plugin/archive-checksum: "SHA256:7031e9a47ca25eca6d827fb50c8f4d0d792f9f6a2b568add4c9bbd7b056f12fa"
   headlamp/plugin/version-compat: ">=0.30"
   # Port forwarding is only available in the desktop app.
   headlamp/plugin/distro-compat: "desktop"
