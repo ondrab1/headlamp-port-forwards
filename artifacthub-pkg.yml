@@ -44,3 +44,11 @@ annotations:
   headlamp/plugin/version-compat: ">=0.30"
   # Port forwarding is only available in the desktop app.
   headlamp/plugin/distro-compat: "linux,windows,mac"
+install: |
+  ## Headlamp Desktop
+
+  1. Open Headlamp.
+  2. Open the Plugin Catalog.
+  3. Search for "Persistent Port Forwards".
+  4. Click Install.
+  5. Restart Headlamp if required.
