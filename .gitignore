@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Caches
+.eslintcache
+
+# Secrets and local environment
+.env
+.env.local
+.env.*.local
+
+# Editors
+.idea/
+.vscode/
+.DS_Store
+
+# Agent tooling state
+.claude/
+.claude-flow/
+.swarm/
+ruvector.db
+
+# Release artifacts
+*.tar.gz
+.release/

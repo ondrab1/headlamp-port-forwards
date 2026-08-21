@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # ci, not install: the lockfile pins yargs 17.7.3, without which the
+      # headlamp-plugin CLI fails to start on recent Node versions.
+      - run: npm ci
+
+      - run: npm run tsc
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+      - name: Check the built plugin is loadable
+        run: test -s dist/main.js
