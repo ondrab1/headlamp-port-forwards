@@ -31,7 +31,7 @@ changes:
     description: "Error messages carry the HTTP status, so a missing forward no longer reads as a network problem"
 annotations:
   headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.4/persistent-port-forwards-0.1.4.tar.gz"
-  headlamp/plugin/archive-checksum: "SHA256:f86273d0e2fd758405ad75db430bcb42686843d619fc828af6916c642e5b8c28"
+  headlamp/plugin/archive-checksum: "SHA256:7d8baaff62083dd9f92680c42b5e6a62aedaed3f07e8ff52a5d9411238c78cc4"
   headlamp/plugin/version-compat: ">=0.30"
   headlamp/plugin/distro-compat: "linux,windows,mac"
 install: |
