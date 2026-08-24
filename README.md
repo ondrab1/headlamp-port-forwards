@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.png" alt="Persistent Port Forwards logo" width="160">
+</p>
+
 # Persistent Port Forwards
 
 A [Headlamp](https://headlamp.dev) plugin that makes port forwards survive a restart and be
