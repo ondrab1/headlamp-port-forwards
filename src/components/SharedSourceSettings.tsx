@@ -11,6 +11,7 @@ import {
   SHARED_DATA_KEY,
 } from '../sharedConfigMap';
 import { SharedConfigMapRef, SharedForwardsResult } from '../types';
+import { describeError } from '../utils';
 
 export interface SharedSourceSettingsProps {
   cluster: string;
@@ -65,9 +66,7 @@ export function SharedSourceSettings({ cluster, configMap, onChange }: SharedSou
     } catch (err) {
       setStatus({
         forwards: [],
-        error: `${t('Could not create the ConfigMap')}: ${
-          err instanceof Error ? err.message : String(err)
-        }`,
+        error: `${t('Could not create the ConfigMap')}: ${describeError(err)}`,
       });
     } finally {
       setBusy(false);

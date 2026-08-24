@@ -15,6 +15,7 @@ import { useConfiguredForwards, usePortForwardList } from '../hooks/usePortForwa
 import { addSharedForward, renameSharedForward, setSharedAutoStart } from '../sharedConfigMap';
 import { removePersistentForward, setPersistentName, store } from '../store';
 import { ListRow, PortForwardEntry } from '../types';
+import { describeError } from '../utils';
 import { NameForwardDialog } from './NameForwardDialog';
 import { ActionsCell, AutoStartCell, PersistCell, SelectionToolbar } from './PortForwardsCells';
 import { StartOnPortDialog } from './StartOnPortDialog';
@@ -131,7 +132,7 @@ export function PortForwardsList() {
         configured.reloadShared();
         enqueueSnackbar(t('Shared with the team'), { variant: 'success' });
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        const message = describeError(err);
         enqueueSnackbar(`${t('Could not write the shared ConfigMap')}: ${message}`, {
           key: 'portforward-share-error',
           preventDuplicate: true,
@@ -165,7 +166,7 @@ export function PortForwardsList() {
           configured.reloadShared();
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        const message = describeError(err);
         enqueueSnackbar(`${t('Could not rename the forward')}: ${message}`, {
           key: 'portforward-rename-error',
           preventDuplicate: true,
@@ -188,7 +189,7 @@ export function PortForwardsList() {
         await setSharedAutoStart(cluster, sharedRef, match.entry, enabled);
         configured.reloadShared();
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        const message = describeError(err);
         enqueueSnackbar(`${t('Could not update auto-start')}: ${message}`, {
           key: 'portforward-autostart-error',
           preventDuplicate: true,

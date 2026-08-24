@@ -8,7 +8,7 @@ import { buildForwardIndex, mergeStoredForwards } from '../forwards';
 import { loadSharedForwards } from '../sharedConfigMap';
 import { store } from '../store';
 import { ConfiguredForwards, PortForwardEntry, SharedForwardsResult } from '../types';
-import { getForwardAddress, resolvePodForService } from '../utils';
+import { describeError, getForwardAddress, resolvePodForService } from '../utils';
 
 const REFRESH_INTERVAL_MS = 5000;
 
@@ -120,9 +120,27 @@ export function usePortForwardList() {
     [cluster]
   );
 
+  /**
+   * Deletes the forward, and forgets it locally whatever the backend answers.
+   *
+   * The backend only knows the forwards it is currently running, so everything
+   * else in the list - one restored from localStorage after a restart, one that
+   * was configured but never ran, one whose backend record is already gone -
+   * makes it fail the delete. That rejection used to abort the cleanup below
+   * before it ran, which left exactly the rows the user wants gone as the ones
+   * that could not be removed.
+   */
   const remove = React.useCallback(
     async (pf: PortForwardEntry) => {
-      await ApiProxy.stopOrDeletePortForward(cluster, pf.id, false);
+      try {
+        await ApiProxy.stopOrDeletePortForward(cluster, pf.id, false);
+      } catch (err) {
+        // Either there was nothing to delete, or the backend is not answering -
+        // and then it is not forwarding anything either. If it does still hold
+        // the forward, the next poll lists it again, which is the honest signal.
+        console.info(`Backend could not delete port forward ${pf.id}:`, describeError(err));
+      }
+
       removeFromStorage(pf.id);
     },
     [cluster]
@@ -151,9 +169,7 @@ export function usePortForwardList() {
       return results
         .map((result, index) =>
           result.status === 'rejected'
-            ? `${items[index].service || items[index].pod}: ${
-                result.reason instanceof Error ? result.reason.message : String(result.reason)
-              }`
+            ? `${items[index].service || items[index].pod}: ${describeError(result.reason)}`
             : null
         )
         .filter((message): message is string => message !== null);

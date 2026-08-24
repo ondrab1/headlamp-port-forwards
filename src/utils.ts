@@ -1,5 +1,24 @@
 import { K8s } from '@kinvolk/headlamp-plugin/lib';
 
+/**
+ * An error from the cluster proxy, as something worth showing a user.
+ *
+ * The status is appended because the message on its own is often meaningless:
+ * the proxy reads a failed response's body as JSON to find a message, and the
+ * port forward endpoints answer in plain text, so parsing fails and every
+ * non-ok status arrives as the literal "Unreachable" - which reads as a network
+ * problem no matter whether the real answer was 404 or 500. The status is on the
+ * error all along, it was just never shown.
+ */
+export function describeError(err: unknown): string {
+  if (!(err instanceof Error)) {
+    return String(err);
+  }
+
+  const status = (err as { status?: number }).status;
+  return status ? `${err.message} (HTTP ${status})` : err.message;
+}
+
 export function getService(
   cluster: string,
   namespace: string,

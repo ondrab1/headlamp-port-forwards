@@ -5,6 +5,7 @@ import {
   SharedForwardsResult,
   SharedPortForward,
 } from './types';
+import { describeError } from './utils';
 
 /** Suggested location, offered as the default in the settings. */
 export const DEFAULT_SHARED_CONFIG_MAP: SharedConfigMapRef = {
@@ -19,10 +20,6 @@ type KubeConfigMap = K8s.configMap.KubeConfigMap;
 
 function statusOf(err: unknown): number | undefined {
   return typeof err === 'object' && err !== null ? (err as { status?: number }).status : undefined;
-}
-
-function messageOf(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
 }
 
 /** Reads a ConfigMap through Headlamp's authenticated cluster proxy. */
@@ -341,7 +338,7 @@ export async function loadSharedForwards(
       }
       return {
         forwards: [],
-        error: `Could not read ConfigMap ${ref.namespace}/${ref.name}: ${messageOf(err)}`,
+        error: `Could not read ConfigMap ${ref.namespace}/${ref.name}: ${describeError(err)}`,
       };
     }
   }

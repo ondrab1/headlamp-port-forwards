@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { buildForwardIndex, flattenForwardIndex, forwardIdentity } from '../forwards';
 import { loadSharedForwards } from '../sharedConfigMap';
 import { store } from '../store';
-import { resolvePodForService } from '../utils';
+import { describeError, resolvePodForService } from '../utils';
 
 /**
  * Starts the forwards that opted into auto-start when entering a cluster.
@@ -106,11 +106,11 @@ export function usePortForwardLogic() {
               );
               console.log(`Started port forward: ${pfId} on pod ${podName}`);
             } catch (err) {
-              failures.push(`${label}: ${err instanceof Error ? err.message : String(err)}`);
+              failures.push(`${label}: ${describeError(err)}`);
             }
           }
         } catch (err) {
-          failures.push(err instanceof Error ? err.message : String(err));
+          failures.push(describeError(err));
         }
       }
 
