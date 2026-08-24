@@ -29,7 +29,7 @@ changes:
     description: "Maintenance release; no functional changes since 0.1.1"
 annotations:
   headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.2/persistent-port-forwards-0.1.2.tar.gz"
-  headlamp/plugin/archive-checksum: "SHA256:4e1777d6490b4ec7092c60f7f3db70e8f9bedb4c2c0c8163eb6ff7af28db4774"
+  headlamp/plugin/archive-checksum: "SHA256:961a5b0da23aff4a74ac95e277a11a90d27ba359f9cef3a4c9a648c7903072cb"
   headlamp/plugin/version-compat: ">=0.30"
   headlamp/plugin/distro-compat: "linux,windows,mac"
 install: |
