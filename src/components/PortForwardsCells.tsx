@@ -36,13 +36,23 @@ export function PersistCell({ row, cluster }: { row: ListRow; cluster: string })
 
   const persisted = row.configuredSource === 'local';
 
+  // The stored entry, not the row id: the row may have been matched to it by
+  // target, in which case its id is the backend's and no entry carries it.
+  function toggle() {
+    if (!persisted) {
+      addPersistentForward(cluster, row);
+      return;
+    }
+    if (row.configuredEntry) {
+      removePersistentForward(cluster, row.configuredEntry);
+    }
+  }
+
   return (
     <IconButton
       size="small"
       title={persisted ? t('Remove from persistent forwards') : t('Save as persistent')}
-      onClick={() =>
-        persisted ? removePersistentForward(cluster, row.id) : addPersistentForward(cluster, row)
-      }
+      onClick={toggle}
     >
       <Icon
         icon={persisted ? 'mdi:pin' : 'mdi:pin-outline'}
@@ -109,13 +119,17 @@ export function AutoStartCell({
     );
   }
 
+  const entry = row.configuredEntry;
+
   return (
     <Switch
       size="small"
       checked={row.autoStart}
       inputProps={{ 'aria-label': t('Auto-start') }}
       title={row.autoStart ? t('Disable auto-start') : t('Enable auto-start')}
-      onChange={event => setAutoStart(cluster, row.id, event.target.checked)}
+      // Same as above: keyed on the stored entry, since the row id need not
+      // appear anywhere in the settings.
+      onChange={event => entry && setAutoStart(cluster, entry, event.target.checked)}
     />
   );
 }

@@ -2,7 +2,13 @@ import {
   PORT_FORWARD_RUNNING_STATUS,
   PORT_FORWARD_STOP_STATUS,
 } from '@kinvolk/headlamp-plugin/lib/CommonComponents';
-import { ConfiguredForwards, ListRow, PortForwardEntry, SharedPortForward } from './types';
+import {
+  ConfiguredForwards,
+  ForwardTarget,
+  ListRow,
+  PortForwardEntry,
+  SharedPortForward,
+} from './types';
 
 /** Upper bound for the collision suffix; far above any realistic config. */
 const MAX_ID_ATTEMPTS = 1000;
@@ -86,19 +92,25 @@ export function flattenForwardIndex(
  * then looks unconfigured: no name, no auto-start, offered for sharing again.
  * The target itself cannot drift like that.
  */
-export function forwardIdentity(pf: {
-  namespace?: string;
-  serviceNamespace?: string;
-  service?: string;
-  pod?: string;
-  targetPort?: string | number;
-  port?: string | number;
-  localPort?: string | number;
-}): string {
+export function forwardIdentity(pf: ForwardTarget): string {
   const namespace = pf.serviceNamespace || pf.namespace || '';
   const target = pf.service || pf.pod || '';
   const local = pf.port ?? pf.localPort ?? '';
   return `${namespace}/${target}/${pf.targetPort ?? ''}/${local}`;
+}
+
+/**
+ * Whether two forwards describe the same thing.
+ *
+ * Ids cannot answer this. A shared entry deliberately carries no id - the one
+ * the backend generates belongs to a single machine and would mean nothing to
+ * the rest of the team - so it derives one, which a forward already running
+ * under a backend id never matches. Everything that asks "is this one already
+ * here?" has to ask it about the target, or it answers no and acts on a
+ * duplicate.
+ */
+export function sameForward(a: ForwardTarget, b: ForwardTarget): boolean {
+  return forwardIdentity(a) === forwardIdentity(b);
 }
 
 /**
@@ -118,15 +130,13 @@ export function findConfigured(
     };
   }
 
-  const identity = forwardIdentity(portForward);
-
   for (const entry of configured.external.values()) {
-    if (forwardIdentity(entry) === identity) {
+    if (sameForward(entry, portForward)) {
       return { entry, source: 'external' };
     }
   }
   for (const entry of configured.local.values()) {
-    if (forwardIdentity(entry) === identity) {
+    if (sameForward(entry, portForward)) {
       return { entry, source: 'local' };
     }
   }
@@ -180,6 +190,12 @@ export function isStopped(pf: PortForwardEntry): boolean {
  * Without auto-start a forward may never have run, so nothing would put it in
  * localStorage and it would be missing from the list entirely - leaving no way
  * to start it by hand. These synthetic rows make it visible and startable.
+ *
+ * "Already there" is decided on the target, not only on the id. Sharing a
+ * running forward writes an entry with no id, which derives one that cannot
+ * match the id the backend gave the running forward, so the row it already has
+ * went unrecognised and the forward was listed twice - once running, once as a
+ * synthetic stopped copy. Resuming that copy then made the duplicate real.
  */
 export function synthesizeMissingRows(
   configured: ConfiguredForwards,
@@ -190,14 +206,17 @@ export function synthesizeMissingRows(
     return [];
   }
 
-  const known = new Set(existing.map(pf => pf.id));
+  const knownIds = new Set(existing.map(pf => pf.id));
+  const knownTargets = new Set(existing.map(forwardIdentity));
 
   return flattenForwardIndex(configured)
-    .filter(({ id }) => {
-      if (known.has(id)) {
+    .filter(({ id, entry }) => {
+      const target = forwardIdentity(entry);
+      if (knownIds.has(id) || knownTargets.has(target)) {
         return false;
       }
-      known.add(id);
+      knownIds.add(id);
+      knownTargets.add(target);
       return true;
     })
     .map(({ id, entry }) => ({
@@ -212,6 +231,32 @@ export function synthesizeMissingRows(
       status: PORT_FORWARD_STOP_STATUS,
       error: '',
     }));
+}
+
+/**
+ * Adds the remembered forwards that the backend does not report to the list.
+ *
+ * Anything the backend already serves wins, including its status. A remembered
+ * forward whose target is already in the list is dropped rather than appended:
+ * the duplicate-row bug above could put a second entry for one target into
+ * localStorage, and matching on the id alone would keep showing both of them
+ * forever. Dropping it here also rewrites the stored list without it, so the
+ * leftovers clear themselves on the next poll.
+ */
+export function mergeStoredForwards(
+  running: PortForwardEntry[],
+  stored: PortForwardEntry[]
+): PortForwardEntry[] {
+  const merged = [...running];
+
+  stored.forEach(entry => {
+    if (merged.some(pf => pf.id === entry.id || sameForward(pf, entry))) {
+      return;
+    }
+    merged.push({ ...entry, status: PORT_FORWARD_STOP_STATUS });
+  });
+
+  return merged;
 }
 
 /**

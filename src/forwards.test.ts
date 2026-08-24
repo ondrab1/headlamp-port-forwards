@@ -17,6 +17,8 @@ import {
   getForwardLabel,
   isRunning,
   isStopped,
+  mergeStoredForwards,
+  sameForward,
   synthesizeMissingRows,
 } from './forwards';
 
@@ -496,5 +498,117 @@ describe('renderKey', () => {
   it('keeps distinct forwards distinct', () => {
     const other = { ...stopped, id: 'other', service: 'wg-tunnel' };
     expect(keyOf(stopped, configured)).not.toBe(keyOf(other, configured));
+  });
+});
+
+describe('sameForward', () => {
+  it('matches a row against a configured entry despite the differing field names', () => {
+    expect(
+      sameForward(
+        row({
+          port: '6379',
+          targetPort: '6379',
+          service: 'redis',
+          namespace: 'cache',
+          serviceNamespace: 'cache',
+        }),
+        // A number where the row has a string, localPort where it has port, and
+        // no serviceNamespace at all: the shape sharing actually writes.
+        {
+          namespace: 'cache',
+          service: 'redis',
+          localPort: 6379,
+          targetPort: 6379,
+        }
+      )
+    ).toBe(true);
+  });
+
+  it('ignores the id entirely', () => {
+    expect(sameForward(row({ id: 'from-the-backend' }), row({ id: 'derived' }))).toBe(true);
+  });
+
+  it('keeps two forwards on different local ports apart', () => {
+    expect(sameForward(row({ port: '6379' }), row({ port: '6380' }))).toBe(false);
+  });
+
+  it('prefers serviceNamespace over namespace, as the identity does', () => {
+    expect(
+      sameForward(
+        row({ serviceNamespace: 'cache', namespace: 'other' }),
+        row({ serviceNamespace: '', namespace: 'cache' })
+      )
+    ).toBe(true);
+  });
+});
+
+describe('synthesizeMissingRows, for a forward that is already running', () => {
+  // Started from a resource page: Headlamp sends an empty id and the backend
+  // generates one, so it looks nothing like a derived id.
+  const running = row({
+    id: 'a3f9c1e2-7b44-4d0a-9c31-8e2f5b6d1027',
+    pod: 'redis-master-0',
+    service: 'redis-master',
+    serviceNamespace: 'cache',
+    namespace: 'cache',
+    port: '6379',
+    targetPort: '6379',
+  });
+
+  // Exactly what sharing writes into the ConfigMap: named, and without an id.
+  const shared = {
+    name: 'Redis Cache',
+    namespace: 'cache',
+    service: 'redis-master',
+    localPort: '6379',
+    targetPort: '6379',
+    autoStart: false,
+  };
+
+  it('does not add a second row after the forward was shared', () => {
+    const index = buildForwardIndex(undefined, [shared]);
+
+    expect(synthesizeMissingRows(index, [running], 'c1')).toEqual([]);
+  });
+
+  it('does not add a second row when the entry was saved under a stale id', () => {
+    const index = buildForwardIndex([{ ...shared, id: 'an-id-from-an-earlier-run' }], undefined);
+
+    expect(synthesizeMissingRows(index, [running], 'c1')).toEqual([]);
+  });
+
+  it('still adds a row for the same service on another local port', () => {
+    const index = buildForwardIndex(undefined, [shared, { ...shared, localPort: '6380' }]);
+    const rows = synthesizeMissingRows(index, [running], 'c1');
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ port: '6380', service: 'redis-master', status: 'Stopped' });
+  });
+});
+
+describe('mergeStoredForwards', () => {
+  const running = row({ id: 'backend-id', status: 'Running' });
+
+  it('adds a remembered forward the backend does not report, as stopped', () => {
+    const stored = row({ id: 'other', service: 'svc-2', port: '9090' });
+
+    expect(mergeStoredForwards([running], [stored])).toEqual([
+      running,
+      { ...stored, status: 'Stopped' },
+    ]);
+  });
+
+  it('keeps the backend entry when the ids agree', () => {
+    expect(mergeStoredForwards([running], [row({ id: 'backend-id', status: 'Stopped' })])).toEqual([
+      running,
+    ]);
+  });
+
+  it('drops a leftover duplicate of a forward already in the list', () => {
+    // What the duplicate-row bug left behind: a second stored entry for one
+    // target, under the id the synthetic row had.
+    const leftover = row({ id: 'ns-svc-1-80', status: 'Stopped' });
+
+    expect(mergeStoredForwards([running], [leftover])).toEqual([running]);
   });
 });

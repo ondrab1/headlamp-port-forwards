@@ -4,7 +4,7 @@ import {
   PORT_FORWARDS_STORAGE_KEY,
 } from '@kinvolk/headlamp-plugin/lib/CommonComponents';
 import React from 'react';
-import { buildForwardIndex } from '../forwards';
+import { buildForwardIndex, mergeStoredForwards } from '../forwards';
 import { loadSharedForwards } from '../sharedConfigMap';
 import { store } from '../store';
 import { ConfiguredForwards, PortForwardEntry, SharedForwardsResult } from '../types';
@@ -39,13 +39,7 @@ function readStoredForwards(): PortForwardEntry[] {
  * port forward buttons on pod/service details keep working.
  */
 function mergeWithStorage(running: PortForwardEntry[]): PortForwardEntry[] {
-  const merged = [...running];
-
-  readStoredForwards().forEach(stored => {
-    if (!merged.some(pf => pf.id === stored.id)) {
-      merged.push({ ...stored, status: PORT_FORWARD_STOP_STATUS });
-    }
-  });
+  const merged = mergeStoredForwards(running, readStoredForwards());
 
   localStorage.setItem(
     PORT_FORWARDS_STORAGE_KEY,

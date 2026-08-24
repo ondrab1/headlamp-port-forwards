@@ -101,19 +101,22 @@ export function PortForwardsSettings(props: any) {
     syncDraft();
   }
 
+  // Both take the entry itself rather than its id. Not every stored entry has
+  // one - a shared forward deliberately has no id - and passing `undefined`
+  // matched every id-less entry at once, so deleting one of them removed the lot.
   function handleAutoStartChange(
     clusterName: string,
-    pfId: string | undefined,
+    entry: SharedPortForward,
     autoStart: boolean
   ) {
-    setAutoStart(clusterName, pfId, autoStart);
+    setAutoStart(clusterName, entry, autoStart);
     syncDraft();
   }
 
-  function handleDeletePersistent(clusterName: string, pfId: string | undefined) {
+  function handleDeletePersistent(clusterName: string, entry: SharedPortForward) {
     // Applied straight away: waiting for the Save button made deleting look
     // like it did nothing, and the stale draft could bring the entry back.
-    removePersistentForward(clusterName, pfId);
+    removePersistentForward(clusterName, entry);
     syncDraft();
   }
 
@@ -235,7 +238,7 @@ export function PortForwardsSettings(props: any) {
                                     onChange={e =>
                                       handleAutoStartChange(
                                         selectedCluster,
-                                        pf.id,
+                                        pf,
                                         e.target.checked
                                       )
                                     }
@@ -246,7 +249,7 @@ export function PortForwardsSettings(props: any) {
                               <IconButton
                                 edge="end"
                                 aria-label="delete"
-                                onClick={() => handleDeletePersistent(selectedCluster, pf.id)}
+                                onClick={() => handleDeletePersistent(selectedCluster, pf)}
                                 size="small"
                               >
                                 <Icon icon="mdi:delete" />

@@ -68,6 +68,23 @@ export interface PortForwardEntry {
 }
 
 /**
+ * The fields that say what a forward forwards, in either shape it comes in.
+ *
+ * A configured entry and a list row describe the same thing under different
+ * field names (localPort vs port, namespace vs serviceNamespace), so anything
+ * comparing the two has to accept both.
+ */
+export interface ForwardTarget {
+  namespace?: string;
+  serviceNamespace?: string;
+  service?: string;
+  pod?: string;
+  targetPort?: string | number;
+  port?: string | number;
+  localPort?: string | number;
+}
+
+/**
  * The forwards configured for a cluster, indexed by the id they get at runtime.
  *
  * Local ones are owned by the plugin settings; external ones come from the

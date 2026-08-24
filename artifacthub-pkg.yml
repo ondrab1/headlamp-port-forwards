@@ -25,8 +25,16 @@ maintainers:
   - name: Ondřej Beneš
     email: ondrab97@gmail.com
 changes:
-  - kind: changed
-    description: "Maintenance release; no functional changes since 0.1.1"
+  - kind: fixed
+    description: "Sharing a running forward no longer adds a duplicate stopped row for it"
+  - kind: fixed
+    description: "Duplicate rows left behind by earlier versions are dropped on the next refresh"
+  - kind: fixed
+    description: "Auto-start skips a forward that is already running under another id, instead of failing on the bound port"
+  - kind: fixed
+    description: "Delete, Rename, Persistent and Auto-start now act on shared and re-created forwards instead of silently doing nothing"
+  - kind: fixed
+    description: "Deleting one persistent forward from the settings no longer removes every entry that has no id"
 annotations:
   headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.2/persistent-port-forwards-0.1.2.tar.gz"
   headlamp/plugin/archive-checksum: "SHA256:961a5b0da23aff4a74ac95e277a11a90d27ba359f9cef3a4c9a648c7903072cb"

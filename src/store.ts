@@ -1,19 +1,9 @@
 import { ConfigStore } from '@kinvolk/headlamp-plugin/lib';
+import { sameForward } from './forwards';
 import { PluginSettingsData, PortForwardEntry, SharedPortForward } from './types';
 
 export const PLUGIN_NAME = 'persistent-port-forwards';
 export const store = new ConfigStore<PluginSettingsData>(PLUGIN_NAME);
-
-/** Whether the given port forward id is saved as persistent for the cluster. */
-export function isPersisted(
-  config: PluginSettingsData | null | undefined,
-  cluster: string,
-  id: string
-): boolean {
-  return !!config?.clusters?.[cluster]?.persistentForwards?.some(
-    (pf: SharedPortForward) => pf.id === id
-  );
-}
 
 function withPersistentForwards(
   cluster: string,
@@ -36,7 +26,13 @@ function withPersistentForwards(
   store.set(newConfig);
 }
 
-/** Saves a port forward so it gets re-created on every app start. */
+/**
+ * Saves a port forward so it gets re-created on every app start.
+ *
+ * Already-saved is decided on the target: the same forward re-created from a
+ * resource page comes back with a new backend id, and comparing ids would store
+ * a second entry for it and list it twice.
+ */
 export function addPersistentForward(cluster: string, pf: PortForwardEntry) {
   const entry: SharedPortForward = {
     id: pf.id,
@@ -50,25 +46,31 @@ export function addPersistentForward(cluster: string, pf: PortForwardEntry) {
   };
 
   withPersistentForwards(cluster, current =>
-    current.some(item => item.id === entry.id) ? current : [...current, entry]
+    current.some(item => sameForward(item, entry)) ? current : [...current, entry]
   );
 }
 
-/** Removes a previously persisted port forward. */
-export function removePersistentForward(cluster: string, id: string | undefined) {
-  withPersistentForwards(cluster, current => current.filter(item => item.id !== id));
+/**
+ * Removes a previously persisted port forward.
+ *
+ * Takes the stored entry rather than a row id. The two differ whenever the
+ * forward was matched to its entry by target - the usual case once a forward
+ * has been re-created - and passing the row id then quietly removed nothing.
+ */
+export function removePersistentForward(cluster: string, entry: SharedPortForward) {
+  withPersistentForwards(cluster, current => current.filter(item => !sameForward(item, entry)));
 }
 
 /** Renames a persisted port forward. */
-export function setPersistentName(cluster: string, id: string | undefined, name: string) {
+export function setPersistentName(cluster: string, entry: SharedPortForward, name: string) {
   withPersistentForwards(cluster, current =>
-    current.map(item => (item.id === id ? { ...item, name } : item))
+    current.map(item => (sameForward(item, entry) ? { ...item, name } : item))
   );
 }
 
 /** Turns auto-start on or off for a persisted port forward. */
-export function setAutoStart(cluster: string, id: string | undefined, autoStart: boolean) {
+export function setAutoStart(cluster: string, entry: SharedPortForward, autoStart: boolean) {
   withPersistentForwards(cluster, current =>
-    current.map(item => (item.id === id ? { ...item, autoStart } : item))
+    current.map(item => (sameForward(item, entry) ? { ...item, autoStart } : item))
   );
 }

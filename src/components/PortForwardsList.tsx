@@ -86,16 +86,17 @@ export function PortForwardsList() {
   const deleteAction = React.useCallback(
     async (items: PortForwardEntry[]) => {
       const errors = await runBulk(items, async pf => {
+        const match = findConfigured(configured, pf);
         await remove(pf);
-        if (configured.local.has(pf.id)) {
-          removePersistentForward(cluster, pf.id);
+        if (match?.source === 'local') {
+          removePersistentForward(cluster, match.entry);
         }
       });
       reportErrors(errors, t('Failed to delete port forward'));
 
       // Nothing we can delete on our side keeps these away - say so rather than
       // letting the row reappear unexplained.
-      const fromUrl = items.filter(pf => configured.external.has(pf.id));
+      const fromUrl = items.filter(pf => findConfigured(configured, pf)?.source === 'external');
       if (fromUrl.length > 0) {
         enqueueSnackbar(
           `${fromUrl.length} ${t(
@@ -158,7 +159,7 @@ export function PortForwardsList() {
         if (match.source === 'local') {
           // Writes to the plugin config, which is a reactive store, so the row
           // updates on its own.
-          setPersistentName(cluster, pf.id, name);
+          setPersistentName(cluster, match.entry, name);
         } else if (sharedRef?.namespace && sharedRef?.name) {
           await renameSharedForward(cluster, sharedRef, match.entry, name);
           configured.reloadShared();

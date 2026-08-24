@@ -1,7 +1,7 @@
 import { ApiProxy, K8s } from '@kinvolk/headlamp-plugin/lib';
 import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
-import { buildForwardIndex, flattenForwardIndex } from '../forwards';
+import { buildForwardIndex, flattenForwardIndex, forwardIdentity } from '../forwards';
 import { loadSharedForwards } from '../sharedConfigMap';
 import { store } from '../store';
 import { resolvePodForService } from '../utils';
@@ -64,9 +64,14 @@ export function usePortForwardLogic() {
         try {
           const existingForwards = await ApiProxy.listPortForward(cluster);
           const existingIds = new Set(existingForwards.map(pf => pf.id));
+          // Also by target: a shared forward the user already started by hand
+          // runs under a backend-generated id, which the derived id here never
+          // matches. Starting it again only bound the same local port twice and
+          // failed with "address already in use".
+          const existingTargets = new Set(existingForwards.map(forwardIdentity));
 
           for (const { id: pfId, entry: portInfo } of toStart) {
-            if (existingIds.has(pfId)) {
+            if (existingIds.has(pfId) || existingTargets.has(forwardIdentity(portInfo))) {
               console.info('Skipping existing port forward: ', pfId);
               continue;
             }
