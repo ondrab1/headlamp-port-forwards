@@ -1,4 +1,4 @@
-version: 0.1.2
+version: 0.1.3
 name: headlamp_persistent_port_forwards
 displayName: Persistent Port Forwards
 createdAt: "2026-08-21T13:00:00Z"
@@ -36,7 +36,7 @@ changes:
   - kind: fixed
     description: "Deleting one persistent forward from the settings no longer removes every entry that has no id"
 annotations:
-  headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.2/persistent-port-forwards-0.1.2.tar.gz"
+  headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.3/persistent-port-forwards-0.1.3.tar.gz"
   headlamp/plugin/archive-checksum: "SHA256:961a5b0da23aff4a74ac95e277a11a90d27ba359f9cef3a4c9a648c7903072cb"
   headlamp/plugin/version-compat: ">=0.30"
   headlamp/plugin/distro-compat: "linux,windows,mac"
