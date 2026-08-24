@@ -1,6 +1,6 @@
 {
   "name": "persistent-port-forwards",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared and Persistent Port Forwards management for Kubernetes clusters",
   "license": "Apache-2.0",
   "author": "Ondřej Beneš <ondrab97@gmail.com>",
