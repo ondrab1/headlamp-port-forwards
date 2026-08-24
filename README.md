@@ -11,17 +11,14 @@ Headlamp can already start a port forward, but it forgets everything: after a re
 each one by hand, and there is no way to hand a colleague the set of forwards a project needs. This
 plugin replaces the Port Forwarding page with one that remembers, auto-starts and shares.
 
-<!-- Add docs/port-forwarding-list.png; see docs/README.md for what it should show. -->
-
 ![Port Forwarding list](docs/port-forwarding-list.png)
 
 ## What it adds
 
 **One-click Resume.** A stopped forward gets a play button that starts it again on its original
 port. When the forward targets a Service the pod is looked up again first, so it still works after
-the pod was replaced — which is exactly when the built-in Start fails.
-
-**Bulk Resume and Stop.** Select rows and act on all of them at once.
+the pod was replaced — which is exactly when the built-in Start fails. Select rows to Resume or
+Stop several at once.
 
 **Persistent forwards.** Pin a forward and the plugin recreates it on the next start. Stored in the
 plugin settings, per cluster.
@@ -35,6 +32,8 @@ cluster. Anything without the flag is listed as stopped and waits for you.
 **Names that mean something.** Call a forward `RabbitMQ Management` instead of reading
 `rabbitmq-cluster`. Shown as the row title with the resource underneath.
 
+**Running count in the app bar,** with progress while forwards are starting.
+
 ## Sharing through a ConfigMap
 
 The shared list lives in the cluster rather than behind a URL. It needs no hosting, is read through
@@ -44,8 +43,6 @@ GitLab or similar is blocked by the browser unless it sends `Access-Control-Allo
 Point the plugin at a namespace and name in its settings. If the ConfigMap does not exist yet,
 **Create** makes it (and its namespace, when that is missing too). Without permission to write, you
 get the manifest to hand over.
-
-<!-- Add docs/plugin-settings.png; see docs/README.md for what it should show. -->
 
 ![Plugin settings](docs/plugin-settings.png)
 
@@ -95,8 +92,12 @@ users are not stuck.
 
 ## Install
 
-Download the tarball from the [latest release](https://github.com/ondrab1/headlamp-port-forwards/releases)
-and install it through Headlamp's plugin manager, or extract it into the plugin directory yourself.
+In Headlamp Desktop, open the Plugin Catalog, search for *Persistent Port Forwards* and click
+Install. Alternatively, download the tarball from the
+[latest release](https://github.com/ondrab1/headlamp-port-forwards/releases) and install it through
+the plugin manager.
+
+Headlamp reads plugins at startup, so **restart the app** afterwards.
 
 To build from source instead:
 
@@ -105,13 +106,31 @@ npm install
 npm run build
 ```
 
-`npm start` does both continuously and copies into place on every change — the target is
-`~/Library/Application Support/Headlamp/plugins/<plugin-name>/` on macOS,
-`~/.config/Headlamp/plugins/<plugin-name>/` elsewhere.
+## Development
 
-Headlamp reads plugins at startup, so **restart the app** to pick up a new build. The plugin logs
-its build stamp to the console on load, and shows it in its settings page, so you can tell which
-build is running.
+```bash
+npm start     # watch, build and install on change
+npm test      # unit tests
+npm run tsc   # type check (strict)
+npm run lint  # eslint, no warnings allowed
+npm run i18n  # extract translatable strings
+```
+
+`npm start` copies the build into `~/Library/Application Support/Headlamp/plugins/<plugin-name>/`
+on macOS, `~/.config/Headlamp/plugins/<plugin-name>/` elsewhere. Restart Headlamp to pick up a new
+build; the plugin logs its build stamp to the console on load and shows it in its settings page, so
+you can tell which build is running.
+
+The logic that decides what a row is — whether it is configured, shared, auto-starting, running —
+lives in `src/forwards.ts` with no React or Headlamp imports, and is covered by `src/forwards.test.ts`.
+Keep it that way: the awkward bugs in this plugin were all cases of two parts of the UI reaching
+different conclusions about the same forward.
+
+Port forwarding only works in the desktop app, so the page is unavailable in the browser build —
+same as Headlamp's own.
+
+See the [Headlamp plugin docs](https://headlamp.dev/docs/latest/development/plugins/) and the
+[plugin API reference](https://headlamp.dev/docs/latest/development/api/).
 
 ## Releasing
 
@@ -134,41 +153,8 @@ builds the tarball, publishes the release with notes rendered from the changelog
 artifact's sha256 back into `artifacthub-pkg.yml` on `main`. ArtifactHub reads that manifest and
 feeds Headlamp's in-app plugin catalog.
 
-Building the tarball in CI is deliberate: `tar` records file timestamps, so every build produces a
-different checksum. A checksum taken from a local build would not match the file attached to the
-release, and Headlamp would refuse to install it.
-
-To build one locally anyway:
-
-```bash
-npm run build
-npm run package-release
-```
-
-`package-release` stages the build under the package name before packaging. Running
-`headlamp-plugin package` directly would name the folder inside the tarball after this repository
-instead, and Headlamp would load the release next to a development build rather than replacing it —
-two copies of the plugin at once.
-
-## Development
-
-```bash
-npm start     # watch, build and install on change
-npm test      # unit tests
-npm run tsc   # type check (strict)
-npm run lint  # eslint, no warnings allowed
-npm run i18n  # extract translatable strings
-```
-
-The logic that decides what a row is — whether it is configured, shared, auto-starting, running —
-lives in `src/forwards.ts` with no React or Headlamp imports, and is covered by `src/forwards.test.ts`.
-Keep it that way: the awkward bugs in this plugin were all cases of two parts of the UI reaching
-different conclusions about the same forward.
-
-Port forwarding only works in the desktop app, so the page is unavailable in the browser build —
-same as Headlamp's own.
-
-## Reference
-
-- [Headlamp plugin docs](https://headlamp.dev/docs/latest/development/plugins/)
-- [Plugin API reference](https://headlamp.dev/docs/latest/development/api/)
+Building in CI is deliberate: `tar` records file timestamps, so a checksum from a local build would
+not match the released file and Headlamp would refuse to install it. To build one locally anyway,
+use `npm run package-release` — it stages the build under the package name first, whereas
+`headlamp-plugin package` would name the folder inside the tarball after this repository, and
+Headlamp would then load the release next to a development build instead of replacing it.
