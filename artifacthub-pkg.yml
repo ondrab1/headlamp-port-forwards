@@ -45,7 +45,7 @@ changes:
     description: "Running/total indicator in the app bar, with progress while forwards are starting"
 annotations:
   headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.1/persistent-port-forwards-0.1.1.tar.gz"
-  headlamp/plugin/archive-checksum: "SHA256:7031e9a47ca25eca6d827fb50c8f4d0d792f9f6a2b568add4c9bbd7b056f12fa"
+  headlamp/plugin/archive-checksum: "SHA256:4e1777d6490b4ec7092c60f7f3db70e8f9bedb4c2c0c8163eb6ff7af28db4774"
   headlamp/plugin/version-compat: ">=0.30"
   headlamp/plugin/distro-compat: "linux,windows,mac"
 install: |
