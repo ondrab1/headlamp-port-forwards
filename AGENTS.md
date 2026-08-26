@@ -17,6 +17,7 @@ The following npm scripts are available for development and testing:
 - **`npm run storybook-build`** - Build static Storybook
 - **`npm run i18n`** - Extract translatable strings for internationalization
 - **`npm run package`** - Create a tarball of the plugin package
+- **`npm run package-release`** - Build the release tarball, staged under the package name so it matches what Headlamp installs (see `scripts/package-release.mjs`)
 
 ## Plugin Development Resources
 
@@ -133,6 +134,41 @@ Check out production-ready plugins in `node_modules/@kinvolk/headlamp-plugin/off
 5. **Format:** Run `npm run format` to format code
 6. **Test:** Run `npm run test` to run tests
 7. **Build:** Run `npm run build` to create production build
+
+## Releasing
+
+Releases are built and published by CI. `README.md` carries the full runbook under
+[Releasing](README.md#releasing); what follows are the rules that are expensive to learn by
+breaking them.
+
+Cutting a release is three steps: update `changes:` in `artifacthub-pkg.template.yml`, bump
+`version` in `package.json`, then `git push origin main vX.Y.Z`. CI does everything else.
+
+**Never hand-write a file under `releases/`.** The workflow generates
+`releases/<version>/artifacthub-pkg.yml` itself, and only after `gh release create` has
+succeeded, so that no version is advertised before the artifact it names exists. Between the tag
+and the publish, `package.json` sits one version ahead of `releases/` — that is the intended
+state, not a step someone forgot. A hand-written entry is how 0.1.5 came to offer a download
+that 404s.
+
+**A version number is published once.** ArtifactHub keeps whatever it first indexed for a
+version and never re-reads it, so a version published with a wrong URL or checksum cannot be
+repaired — not by re-running the workflow, not by editing the generated file. The only remedy is
+to withdraw it (delete `releases/<version>/`) and ship the same code under the next number.
+That is what 0.1.6 is. If a tag ever ends up without a run, use the workflow's **Run workflow**
+button promptly, before ArtifactHub indexes the version; never delete and re-push a tag.
+
+**The changelog lives in `artifacthub-pkg.template.yml`, and nowhere else.** Headlamp's catalog
+shows it and the GitHub release notes are rendered from it, so it is never written twice. The
+files under `releases/` are records of releases already out; editing one rewrites what the
+catalog offers for a version users have installed. An `artifacthub-pkg.yml` in the repository
+root is worse still — ArtifactHub indexes it as a package version of its own, and CI fails on
+one.
+
+Before pushing, run what CI runs: `npm run tsc && npm run lint && npm test && npm run build`.
+The separate `catalog` job downloads every artifact `releases/` points at and checks it against
+the recorded checksum, so a catalog entry that has drifted — including an old release whose
+asset was deleted later — surfaces as a red `main` instead of as a failed install for a user.
 
 ## Best Practices
 
