@@ -38,6 +38,8 @@ changes:
     description: "Delete now asks for confirmation, and a forward from the shared ConfigMap can be removed from it in the same step instead of being edited out by hand"
   - kind: fixed
     description: "Starting or stopping a forward shows progress right away, instead of looking like the click did nothing until the list refreshed"
+  - kind: removed
+    description: "0.1.5 has been withdrawn. Its release was never built, so the version the catalog offered could not be downloaded; this release carries the same changes and installs"
 annotations:
   headlamp/plugin/archive-url: "" # set by the release workflow
   headlamp/plugin/archive-checksum: "" # set by the release workflow
