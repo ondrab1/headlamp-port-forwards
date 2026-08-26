@@ -1,4 +1,4 @@
-version: 0.1.4
+version: 0.1.5
 name: headlamp_persistent_port_forwards
 displayName: Persistent Port Forwards
 createdAt: "2026-08-21T13:00:00Z"
@@ -25,12 +25,12 @@ maintainers:
   - name: Ondřej Beneš
     email: ondrab97@gmail.com
 changes:
+  - kind: added
+    description: "Delete now asks for confirmation, and a forward from the shared ConfigMap can be removed from it in the same step instead of being edited out by hand"
   - kind: fixed
-    description: "Deleting a forward the backend no longer knows about now works, instead of failing as unreachable and leaving the row in place"
-  - kind: fixed
-    description: "Error messages carry the HTTP status, so a missing forward no longer reads as a network problem"
+    description: "Starting or stopping a forward shows progress right away, instead of looking like the click did nothing until the list refreshed"
 annotations:
-  headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.4/persistent-port-forwards-0.1.4.tar.gz"
+  headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.5/persistent-port-forwards-0.1.5.tar.gz"
   headlamp/plugin/archive-checksum: "SHA256:7d8baaff62083dd9f92680c42b5e6a62aedaed3f07e8ff52a5d9411238c78cc4"
   headlamp/plugin/version-compat: ">=0.30"
   headlamp/plugin/distro-compat: "linux,windows,mac"
