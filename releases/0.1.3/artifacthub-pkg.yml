@@ -1,0 +1,50 @@
+version: 0.1.3
+name: headlamp_persistent_port_forwards
+displayName: Persistent Port Forwards
+createdAt: "2026-08-24T11:07:20Z"
+description: Port forwards that survive a restart, start themselves, and can be shared with your team through a ConfigMap.
+license: Apache-2.0
+homeURL: https://github.com/ondrab1/headlamp-port-forwards
+logoURL: https://raw.githubusercontent.com/ondrab1/headlamp-port-forwards/refs/heads/main/docs/logo.png
+links:
+  - name: source
+    url: https://github.com/ondrab1/headlamp-port-forwards
+  - name: issues
+    url: https://github.com/ondrab1/headlamp-port-forwards/issues
+screenshots:
+  - title: Port Forwarding list
+    url: https://raw.githubusercontent.com/ondrab1/headlamp-port-forwards/refs/heads/main/docs/port-forwarding-list.png
+  - title: Plugin settings
+    url: https://raw.githubusercontent.com/ondrab1/headlamp-port-forwards/refs/heads/main/docs/plugin-settings.png
+keywords:
+  - headlamp
+  - kubernetes
+  - port-forward
+  - debugging
+maintainers:
+  - name: Ondřej Beneš
+    email: ondrab97@gmail.com
+changes:
+  - kind: fixed
+    description: "Sharing a running forward no longer adds a duplicate stopped row for it"
+  - kind: fixed
+    description: "Duplicate rows left behind by earlier versions are dropped on the next refresh"
+  - kind: fixed
+    description: "Auto-start skips a forward that is already running under another id, instead of failing on the bound port"
+  - kind: fixed
+    description: "Delete, Rename, Persistent and Auto-start now act on shared and re-created forwards instead of silently doing nothing"
+  - kind: fixed
+    description: "Deleting one persistent forward from the settings no longer removes every entry that has no id"
+annotations:
+  headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.3/persistent-port-forwards-0.1.3.tar.gz"
+  headlamp/plugin/archive-checksum: "SHA256:f86273d0e2fd758405ad75db430bcb42686843d619fc828af6916c642e5b8c28"
+  headlamp/plugin/version-compat: ">=0.30"
+  headlamp/plugin/distro-compat: "linux,windows,mac"
+install: |
+  ## Headlamp Desktop
+
+  1. Open Headlamp.
+  2. Open the Plugin Catalog.
+  3. Search for "Persistent Port Forwards".
+  4. Click Install.
+  5. Restart Headlamp if required.

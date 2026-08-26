@@ -155,9 +155,9 @@ and the [plugin API reference](https://headlamp.dev/docs/latest/development/api/
 
 For maintainers. Releases are built and published by CI; for each one:
 
-1. Update the `changes:` list in `artifacthub-pkg.yml` (`kind` of `added`, `changed`, `fixed` or
-   `removed`). That list is the changelog — Headlamp's plugin catalog shows it and the GitHub
-   release notes are rendered from it, so it is not written twice.
+1. Update the `changes:` list in `artifacthub-pkg.template.yml` (`kind` of `added`, `changed`,
+   `fixed` or `removed`). That list is the changelog — Headlamp's plugin catalog shows it and the
+   GitHub release notes are rendered from it, so it is not written twice.
 2. Bump `version` in `package.json`.
 3. Commit, then push a tag:
 
@@ -166,26 +166,34 @@ git tag v0.1.5
 git push origin main v0.1.5
 ```
 
-Leave `version`, `archive-url` and `archive-checksum` in `artifacthub-pkg.yml` alone — the workflow
-writes all three, in one commit on `main`, and only after the release is published. ArtifactHub
-reads that manifest from the default branch and feeds Headlamp's in-app catalog, so a version
-written there ahead of its artifact is one the catalog offers and nobody can install. Announcing it
-afterwards means a failed build, or a trigger lost to an Actions outage, leaves `main` pointing at
-the last release that really is downloadable. Between the tag and the publish, `package.json` is
-therefore a version ahead of the manifest, and that is the intended state.
+That is the whole manual part. The workflow refuses to release if the tag and `package.json`
+disagree, then runs the checks, builds the tarball, publishes the release with notes rendered from
+the changelog, and only afterwards writes `releases/<version>/artifacthub-pkg.yml` on `main`.
 
-The workflow refuses to release if the tag and `package.json` disagree, then runs the checks, builds
-the tarball, publishes the release with notes rendered from the changelog, and announces it on
-`main`.
+### How the catalog entry gets there
 
-If a tag ever ends up without a run — a push event during an Actions outage is never replayed — use
-the workflow's **Run workflow** button and give it the tag name, rather than deleting and re-pushing
-the tag. Re-running an older tag is safe: the announce step will not walk the catalog back to a
-version `main` has already moved past.
+ArtifactHub reads this repository from `main` and feeds Headlamp's in-app catalog. It indexes files:
+**one `artifacthub-pkg.yml` is one version of the package**, which is why they live one per folder
+under `releases/`. A single manifest that each release overwrote — what this repository did until
+0.1.4 — leaves the catalog with exactly one version and erases the previous changelog along with it.
 
-CI checks on every push that the version `main` advertises can actually be downloaded and matches
-its recorded checksum, so a manifest that has drifted out of step shows up as a red `main` instead
-of as a failed install for a user.
+Two rules follow, and CI enforces both:
+
+- `artifacthub-pkg.template.yml` is the copy a human edits, and its name keeps ArtifactHub from
+  indexing it. The generated files under `releases/` are records of published releases; editing one
+  rewrites what the catalog offers for a version that is already out.
+- Nothing announces a version before its artifact exists. The workflow fills in `version`,
+  `createdAt`, `archive-url` and `archive-checksum` after `gh release create` succeeds, so a failed
+  build — or a trigger lost to an Actions outage — leaves the catalog one version behind instead of
+  offering an install that 404s. Between the tag and the publish, `package.json` is therefore a
+  version ahead of `releases/`, and that is the intended state.
+
+CI downloads every artifact `releases/` points at and checks it against the recorded checksum, so a
+catalog entry that has drifted out of step — including an old release whose asset was deleted years
+later — shows up as a red `main` instead of as a failed install for a user.
+
+If a tag ever ends up without a run, use the workflow's **Run workflow** button and give it the tag
+name, rather than deleting and re-pushing the tag.
 
 Building in CI is deliberate: `tar` records file timestamps, so a checksum from a local build would
 not match the released file and Headlamp would refuse to install it. To build one locally anyway,

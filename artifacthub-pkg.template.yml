@@ -1,7 +1,16 @@
-version: 0.1.4
+# Metadata for the next release.
+#
+# ArtifactHub indexes files named exactly artifacthub-pkg.yml, one per package
+# version, each in its own folder - see releases/. This is not one of them: it
+# is the copy a human edits. The release workflow renders it into
+# releases/<version>/artifacthub-pkg.yml once the release is published, filling
+# in the four fields marked below.
+#
+# Edit `changes:` here. Never edit the generated files under releases/.
+version: 0.0.0 # set by the release workflow
 name: headlamp_persistent_port_forwards
 displayName: Persistent Port Forwards
-createdAt: "2026-08-21T13:00:00Z"
+createdAt: "1970-01-01T00:00:00Z" # set by the release workflow
 description: Port forwards that survive a restart, start themselves, and can be shared with your team through a ConfigMap.
 license: Apache-2.0
 homeURL: https://github.com/ondrab1/headlamp-port-forwards
@@ -30,8 +39,8 @@ changes:
   - kind: fixed
     description: "Starting or stopping a forward shows progress right away, instead of looking like the click did nothing until the list refreshed"
 annotations:
-  headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.4/persistent-port-forwards-0.1.4.tar.gz"
-  headlamp/plugin/archive-checksum: "SHA256:7d8baaff62083dd9f92680c42b5e6a62aedaed3f07e8ff52a5d9411238c78cc4"
+  headlamp/plugin/archive-url: "" # set by the release workflow
+  headlamp/plugin/archive-checksum: "" # set by the release workflow
   headlamp/plugin/version-compat: ">=0.30"
   headlamp/plugin/distro-compat: "linux,windows,mac"
 install: |

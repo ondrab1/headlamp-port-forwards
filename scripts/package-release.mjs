@@ -43,4 +43,6 @@ execFileSync(
 fs.rmSync(path.join(root, '.release'), { recursive: true, force: true });
 
 console.log(`\nFolder inside the tarball: ${pluginName}/  (matches what npm start installs)`);
-console.log('Put the checksum above into artifacthub-pkg.yml before publishing.');
+console.log(
+  'The release workflow records this checksum; a local build only needs it for a manual install.'
+);

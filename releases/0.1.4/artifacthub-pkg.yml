@@ -1,0 +1,44 @@
+version: 0.1.4
+name: headlamp_persistent_port_forwards
+displayName: Persistent Port Forwards
+createdAt: "2026-08-24T12:10:05Z"
+description: Port forwards that survive a restart, start themselves, and can be shared with your team through a ConfigMap.
+license: Apache-2.0
+homeURL: https://github.com/ondrab1/headlamp-port-forwards
+logoURL: https://raw.githubusercontent.com/ondrab1/headlamp-port-forwards/refs/heads/main/docs/logo.png
+links:
+  - name: source
+    url: https://github.com/ondrab1/headlamp-port-forwards
+  - name: issues
+    url: https://github.com/ondrab1/headlamp-port-forwards/issues
+screenshots:
+  - title: Port Forwarding list
+    url: https://raw.githubusercontent.com/ondrab1/headlamp-port-forwards/refs/heads/main/docs/port-forwarding-list.png
+  - title: Plugin settings
+    url: https://raw.githubusercontent.com/ondrab1/headlamp-port-forwards/refs/heads/main/docs/plugin-settings.png
+keywords:
+  - headlamp
+  - kubernetes
+  - port-forward
+  - debugging
+maintainers:
+  - name: Ondřej Beneš
+    email: ondrab97@gmail.com
+changes:
+  - kind: fixed
+    description: "Deleting a forward the backend no longer knows about now works, instead of failing as unreachable and leaving the row in place"
+  - kind: fixed
+    description: "Error messages carry the HTTP status, so a missing forward no longer reads as a network problem"
+annotations:
+  headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.4/persistent-port-forwards-0.1.4.tar.gz"
+  headlamp/plugin/archive-checksum: "SHA256:7d8baaff62083dd9f92680c42b5e6a62aedaed3f07e8ff52a5d9411238c78cc4"
+  headlamp/plugin/version-compat: ">=0.30"
+  headlamp/plugin/distro-compat: "linux,windows,mac"
+install: |
+  ## Headlamp Desktop
+
+  1. Open Headlamp.
+  2. Open the Plugin Catalog.
+  3. Search for "Persistent Port Forwards".
+  4. Click Install.
+  5. Restart Headlamp if required.
