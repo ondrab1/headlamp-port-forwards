@@ -287,12 +287,17 @@ export function getForwardLabel(
  * Every cell then renders from its own row object, so no two cells can reach
  * different conclusions about the same forward.
  */
-export function decorateRows(rows: PortForwardEntry[], configured: ConfiguredForwards): ListRow[] {
+export function decorateRows(
+  rows: PortForwardEntry[],
+  configured: ConfiguredForwards,
+  pendingIds: string[] = []
+): ListRow[] {
   return rows.map(pf => {
     const match = findConfigured(configured, pf);
     const label = getForwardLabel(pf, configured);
     const autoStart = match?.entry.autoStart === true;
     const running = isRunning(pf);
+    const pending = pendingIds.includes(pf.id);
 
     return {
       ...pf,
@@ -301,6 +306,7 @@ export function decorateRows(rows: PortForwardEntry[], configured: ConfiguredFor
       label,
       autoStart,
       running,
+      pending,
       renderKey: [
         pf.id,
         pf.status ?? '',
@@ -309,6 +315,7 @@ export function decorateRows(rows: PortForwardEntry[], configured: ConfiguredFor
         match?.source ?? '',
         autoStart ? 'auto' : '',
         label ?? '',
+        pending ? 'pending' : '',
       ].join('|'),
     };
   });

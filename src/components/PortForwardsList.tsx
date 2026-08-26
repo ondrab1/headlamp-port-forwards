@@ -42,9 +42,10 @@ export function PortForwardsList() {
             [...portForwards, ...synthesizeMissingRows(configured, portForwards, cluster)].sort(
               compareForwards
             ),
-            configured
+            configured,
+            pendingIds
           ),
-    [portForwards, configured, cluster]
+    [portForwards, configured, cluster, pendingIds]
   );
 
   const reportErrors = React.useCallback(
@@ -201,8 +202,15 @@ export function PortForwardsList() {
   );
 
   function statusCell(row: ListRow) {
-    if (pendingIds.includes(row.id)) {
-      return <Loader noContainer title={t('Loading port forwarding')} size={30} />;
+    if (row.pending) {
+      return (
+        <Box display="flex" alignItems="center" gap={1}>
+          <Loader noContainer title={t('Working on port forwarding')} size={20} />
+          <Typography variant="body2" color="textSecondary">
+            {row.running ? t('Stopping…') : t('Starting…')}
+          </Typography>
+        </Box>
+      );
     }
     // A stopped forward often keeps the error of an earlier attempt. Flag it,
     // but keep showing the real status so the row does not read as unusable -
@@ -386,7 +394,7 @@ export function PortForwardsList() {
               return (
                 <ActionsCell
                   portForward={pf}
-                  pending={pendingIds.includes(pf.id)}
+                  pending={pf.pending}
                   canShare={
                     !!sharedRef?.namespace &&
                     !!sharedRef?.name &&

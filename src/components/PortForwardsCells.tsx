@@ -3,6 +3,7 @@ import { useTranslation } from '@kinvolk/headlamp-plugin/lib';
 import {
   Box,
   Button,
+  CircularProgress,
   IconButton,
   ListItemText,
   Menu,
@@ -174,11 +175,22 @@ export function ActionsCell({
 
   return (
     <Box display="flex" alignItems="center" justifyContent="flex-end">
-      {stopped && (
+      {/* In the button's own place, so the click is acknowledged where the eye
+          already is - starting takes a moment, and the status column may be
+          scrolled out of sight or hidden. */}
+      {pending && (
+        <Box display="flex" alignItems="center" justifyContent="center" width={30} height={30}>
+          <CircularProgress
+            size={18}
+            color="primary"
+            aria-label={running ? t('Stopping port forward') : t('Starting port forward')}
+          />
+        </Box>
+      )}
+      {stopped && !pending && (
         <IconButton
           size="small"
           color="primary"
-          disabled={pending}
           title={t('Resume port forward')}
           aria-label={t('Resume port forward')}
           onClick={onResume}
@@ -186,11 +198,10 @@ export function ActionsCell({
           <Icon icon="mdi:play-circle-outline" width="20" />
         </IconButton>
       )}
-      {running && (
+      {running && !pending && (
         <IconButton
           size="small"
           color="primary"
-          disabled={pending}
           title={t('Stop port forward')}
           aria-label={t('Stop port forward')}
           onClick={onStop}

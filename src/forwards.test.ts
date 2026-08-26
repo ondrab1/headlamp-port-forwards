@@ -432,6 +432,13 @@ describe('decorateRows', () => {
     });
   });
 
+  it('marks the forwards whose action is still in flight', () => {
+    const rows = decorateRows([rabbitRow, row({ id: 'other' })], index, [rabbitRow.id]);
+
+    expect(rows[0].pending).toBe(true);
+    expect(rows[1].pending).toBe(false);
+  });
+
   it('marks a stopped forward as not running', () => {
     const [decorated] = decorateRows([{ ...rabbitRow, status: 'Stopped' }], index);
     expect(decorated.running).toBe(false);
@@ -460,8 +467,8 @@ describe('renderKey', () => {
     status: 'Stopped',
   });
 
-  function keyOf(pf: typeof stopped, index: typeof configured) {
-    return decorateRows([pf], index)[0].renderKey;
+  function keyOf(pf: typeof stopped, index: typeof configured, pendingIds: string[] = []) {
+    return decorateRows([pf], index, pendingIds)[0].renderKey;
   }
 
   it('changes when configuration arrives, even though the status did not', () => {
@@ -485,6 +492,13 @@ describe('renderKey', () => {
   it('changes when the name changes', () => {
     const renamed = buildForwardIndex(undefined, [{ ...entry, name: 'Rabbit UI' }]);
     expect(keyOf(stopped, configured)).not.toBe(keyOf(stopped, renamed));
+  });
+
+  it('changes the moment the forward is marked pending', () => {
+    // Starting takes a second or two. Without the pending flag in the key the
+    // table reused the cached cells, so the spinner only appeared once the poll
+    // brought a new status - and the click looked like it did nothing.
+    expect(keyOf(stopped, configured)).not.toBe(keyOf(stopped, configured, [stopped.id]));
   });
 
   it('changes when the local port changes', () => {

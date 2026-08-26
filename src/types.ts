@@ -112,6 +112,8 @@ export interface ListRow extends PortForwardEntry {
   label?: string;
   autoStart: boolean;
   running: boolean;
+  /** An action on this forward is in flight. */
+  pending: boolean;
   /**
    * Identity for the table, covering every field the cells render from.
    *
