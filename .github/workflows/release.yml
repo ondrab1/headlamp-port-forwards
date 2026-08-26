@@ -1,21 +1,37 @@
 name: Release
 
-# Tagging is the whole trigger: push v0.1.0 and the rest happens here. Building
-# in CI also removes the trap of a hand-made release - the tarball embeds file
+# Tagging is the trigger: push v0.1.0 and the rest happens here. Building in CI
+# also removes the trap of a hand-made release - the tarball embeds file
 # timestamps, so its checksum differs on every build, and a checksum taken from
 # a different build than the uploaded file makes Headlamp refuse the install.
+#
+# workflow_dispatch exists because a push event can be lost - during an Actions
+# outage no run is created, and GitHub never replays it. Re-running by hand then
+# beats deleting and re-pushing the tag.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release, e.g. v0.1.5. It must already exist.'
+        required: true
 
 permissions:
   contents: write
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      # Always the tag, never the branch: on workflow_dispatch the default
+      # checkout would be whatever main happens to hold.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
 
       - uses: actions/setup-node@v4
         with:
@@ -24,22 +40,25 @@ jobs:
 
       - run: npm ci
 
-      - name: Check the tag matches the declared versions
+      - name: Check the tag matches the declared version
         run: |
-          tag="${GITHUB_REF_NAME#v}"
+          tag="${TAG#v}"
           pkg=$(node -p "require('./package.json').version")
           hub=$(grep -m1 '^version:' artifacthub-pkg.yml | awk '{print $2}')
 
           echo "tag=$tag package.json=$pkg artifacthub-pkg.yml=$hub"
-          if [ "$tag" != "$pkg" ] || [ "$tag" != "$hub" ]; then
-            echo "::error::Version mismatch. Bump package.json and artifacthub-pkg.yml to $tag before tagging."
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::Version mismatch. Bump package.json to $tag before tagging."
             exit 1
           fi
 
-          expected="persistent-port-forwards-$tag.tar.gz"
-          if ! grep -q "$expected" artifacthub-pkg.yml; then
-            echo "::error::archive-url in artifacthub-pkg.yml does not point at $expected"
-            exit 1
+          # The manifest is expected to still name the previous release here:
+          # this job writes the new version into it only once the artifact it
+          # points at exists. Finding the new one already there is not fatal -
+          # the release still publishes - but main advertised a version nobody
+          # could download until now.
+          if [ "$tag" = "$hub" ]; then
+            echo "::warning::artifacthub-pkg.yml already declares $tag. Leave version and archive-url to this workflow; only changes: is yours to edit."
           fi
 
       - run: npm run tsc
@@ -51,7 +70,7 @@ jobs:
       - name: Collect the artifact and its checksum
         id: artifact
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${TAG#v}"
           file="persistent-port-forwards-$version.tar.gz"
           checksum=$(sha256sum "$file" | awk '{print $1}')
 
@@ -79,33 +98,59 @@ jobs:
           \`\`\`
           EOF
 
-          gh release create "$GITHUB_REF_NAME" \
+          gh release create "$TAG" \
             "${{ steps.artifact.outputs.file }}" \
-            --title "$GITHUB_REF_NAME" \
+            --title "$TAG" \
             --notes-file notes.md
 
-      # ArtifactHub reads the manifest from the default branch, not from the tag,
-      # so the checksum of the artifact just published has to land on main.
-      - name: Record the checksum on main
+      # Only now, with the artifact published, does main get to say the new
+      # version exists. ArtifactHub reads that manifest from the default branch
+      # and hands it to Headlamp's in-app catalog, so a version written there
+      # before its release is one the catalog offers and cannot install. Doing
+      # it in this order means a lost trigger or a failed build leaves main
+      # pointing at the last release that really is downloadable.
+      - name: Announce the release on main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git fetch origin main
           git checkout -B main origin/main
 
-          python3 - "$GITHUB_REF_NAME" "${{ steps.artifact.outputs.checksum }}" <<'PY'
+          python3 - "$TAG" "${{ steps.artifact.outputs.checksum }}" "$GITHUB_REPOSITORY" <<'PY'
           import re, sys
-          tag, checksum = sys.argv[1], sys.argv[2]
+          tag, checksum, repo = sys.argv[1], sys.argv[2], sys.argv[3]
+          version = tag[1:] if tag.startswith('v') else tag
           path = 'artifacthub-pkg.yml'
           text = open(path).read()
-          updated = re.sub(
+
+          current = re.search(r'^version:\s*(\S+)', text, re.M).group(1)
+          number = lambda v: [int(part) for part in re.findall(r'\d+', v)]
+
+          # Re-releasing an old tag by hand must not walk the catalog backwards
+          # to a version main has already moved past.
+          if number(version) < number(current):
+              print(f'main already advertises {current}; leaving it alone rather than moving back to {version}.')
+              sys.exit(0)
+
+          url = (
+              f'https://github.com/{repo}/releases/download/{tag}/'
+              f'persistent-port-forwards-{version}.tar.gz'
+          )
+
+          text = re.sub(r'^version:\s*\S+', f'version: {version}', text, count=1, flags=re.M)
+          text = re.sub(
+              r'(headlamp/plugin/archive-url:\s*")[^"]*(")',
+              lambda m: f'{m.group(1)}{url}{m.group(2)}',
+              text,
+          )
+          text = re.sub(
               r'(headlamp/plugin/archive-checksum:\s*")[^"]*(")',
               rf'\g<1>SHA256:{checksum}\g<2>',
               text,
           )
-          if updated == text:
-              print(f'Checksum already current for {tag}, nothing to record.')
-          open(path, 'w').write(updated)
+
+          open(path, 'w').write(text)
+          print(f'main now advertises {version}.')
           PY
 
           if git diff --quiet; then
@@ -115,5 +160,5 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "Record release checksum for $GITHUB_REF_NAME"
+          git commit -am "Publish $TAG to ArtifactHub"
           git push origin main

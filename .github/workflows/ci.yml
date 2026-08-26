@@ -27,3 +27,44 @@ jobs:
 
       - name: Check the built plugin is loadable
         run: test -s dist/main.js
+
+  # ArtifactHub reads artifacthub-pkg.yml from main and hands it to Headlamp's
+  # in-app catalog, so whatever stands there is what users try to install. A
+  # version whose artifact is missing, or whose checksum does not match it, is
+  # a broken install for everyone - and nothing else notices, because the
+  # plugin itself builds and tests just fine. This turns that into a red main.
+  manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The advertised release exists and matches its checksum
+        run: |
+          version=$(grep -m1 '^version:' artifacthub-pkg.yml | awk '{print $2}')
+          url=$(grep -m1 'archive-url:' artifacthub-pkg.yml | sed 's/.*"\(.*\)"/\1/')
+          declared=$(grep -m1 'archive-checksum:' artifacthub-pkg.yml | sed 's/.*"SHA256:\(.*\)"/\1/')
+
+          echo "version=$version"
+          echo "url=$url"
+
+          expected="persistent-port-forwards-$version.tar.gz"
+          case "$url" in
+            *"$expected") ;;
+            *)
+              echo "::error::archive-url does not point at $expected"
+              exit 1
+              ;;
+          esac
+
+          if ! curl -fsSL "$url" -o artifact.tar.gz; then
+            echo "::error::archive-url does not resolve. Version $version is advertised to ArtifactHub but its release is not published, so installing it fails."
+            exit 1
+          fi
+
+          actual=$(sha256sum artifact.tar.gz | awk '{print $1}')
+          if [ "$actual" != "$declared" ]; then
+            echo "::error::Checksum mismatch for $expected. Declared $declared, downloaded $actual - Headlamp refuses an install on this."
+            exit 1
+          fi
+
+          echo "Version $version is downloadable and matches its checksum."

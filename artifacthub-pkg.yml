@@ -1,4 +1,4 @@
-version: 0.1.5
+version: 0.1.4
 name: headlamp_persistent_port_forwards
 displayName: Persistent Port Forwards
 createdAt: "2026-08-21T13:00:00Z"
@@ -30,7 +30,7 @@ changes:
   - kind: fixed
     description: "Starting or stopping a forward shows progress right away, instead of looking like the click did nothing until the list refreshed"
 annotations:
-  headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.5/persistent-port-forwards-0.1.5.tar.gz"
+  headlamp/plugin/archive-url: "https://github.com/ondrab1/headlamp-port-forwards/releases/download/v0.1.4/persistent-port-forwards-0.1.4.tar.gz"
   headlamp/plugin/archive-checksum: "SHA256:7d8baaff62083dd9f92680c42b5e6a62aedaed3f07e8ff52a5d9411238c78cc4"
   headlamp/plugin/version-compat: ">=0.30"
   headlamp/plugin/distro-compat: "linux,windows,mac"
