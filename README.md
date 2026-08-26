@@ -2,10 +2,19 @@
   <img src="docs/logo.png" alt="Persistent Port Forwards logo" width="160">
 </p>
 
-# Persistent Port Forwards
+<h1 align="center">Persistent Port Forwards</h1>
 
-A [Headlamp](https://headlamp.dev) plugin that makes port forwards survive a restart and be
-shareable with your team.
+<p align="center">
+  A <a href="https://headlamp.dev">Headlamp</a> plugin for port forwards that survive a restart,
+  start themselves, and can be shared with your team through a ConfigMap.
+</p>
+
+<p align="center">
+  <a href="https://github.com/ondrab1/headlamp-port-forwards/actions/workflows/ci.yml"><img src="https://github.com/ondrab1/headlamp-port-forwards/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/ondrab1/headlamp-port-forwards/releases/latest"><img src="https://img.shields.io/github/v/release/ondrab1/headlamp-port-forwards?label=release" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0"></a>
+  <img src="https://img.shields.io/badge/Headlamp-%E2%89%A5%200.30-informational" alt="Headlamp 0.30 or newer">
+</p>
 
 Headlamp can already start a port forward, but it forgets everything: after a restart you re-create
 each one by hand, and there is no way to hand a colleague the set of forwards a project needs. This
@@ -13,26 +22,45 @@ plugin replaces the Port Forwarding page with one that remembers, auto-starts an
 
 ![Port Forwarding list](docs/port-forwarding-list.png)
 
-## What it adds
+## Features
 
-**One-click Resume.** A stopped forward gets a play button that starts it again on its original
-port. When the forward targets a Service the pod is looked up again first, so it still works after
-the pod was replaced — which is exactly when the built-in Start fails. Select rows to Resume or
-Stop several at once.
+- **One-click Resume** for a stopped forward, on its original port. When it targets a Service the
+  pod is resolved again first, so it still works after the pod was replaced — which is exactly when
+  the built-in Start fails.
+- **Persistent forwards.** Pin a forward and the plugin re-creates it on the next start. Kept in the
+  plugin settings, per cluster.
+- **Shared forwards.** A ConfigMap in the cluster holds the forwards the whole team should have.
+  Everyone pointing the plugin at it sees the same list.
+- **Auto-start, opt-in per forward.** Anything without the flag is listed as stopped and waits for
+  you.
+- **Names that mean something.** `RabbitMQ Management` as the row title, with `rabbitmq-cluster`
+  underneath.
+- **Bulk Resume and Stop** for selected rows, and a **running count in the app bar** with progress
+  while forwards are starting.
+- **Clickable local ports** while a forward runs, greyed with the reason while it does not.
 
-**Persistent forwards.** Pin a forward and the plugin recreates it on the next start. Stored in the
-plugin settings, per cluster.
+## Requirements
 
-**Shared forwards.** A ConfigMap in the cluster holds the forwards your whole team should have.
-Everyone pointing the plugin at it sees the same list.
+- Headlamp **0.30 or newer**, **desktop app**, on Linux, macOS or Windows. Port forwarding is not
+  available in the browser build, so the page is disabled there — same as Headlamp's own.
+- Nothing at all for persistent forwards and auto-start; they live in the local plugin settings.
+- For shared forwards, access to one ConfigMap — see [Permissions](#permissions).
 
-**Auto-start, opt-in.** Each forward decides whether it starts by itself when you enter the
-cluster. Anything without the flag is listed as stopped and waits for you.
+## Install
 
-**Names that mean something.** Call a forward `RabbitMQ Management` instead of reading
-`rabbitmq-cluster`. Shown as the row title with the resource underneath.
+In Headlamp Desktop, open the Plugin Catalog, search for _Persistent Port Forwards_ and click
+Install. Alternatively, download the tarball from the
+[latest release](https://github.com/ondrab1/headlamp-port-forwards/releases) and install it through
+the plugin manager.
 
-**Running count in the app bar,** with progress while forwards are starting.
+Headlamp reads plugins at startup, so **restart the app** afterwards.
+
+To build from source instead:
+
+```bash
+npm install
+npm run build
+```
 
 ## Sharing through a ConfigMap
 
@@ -79,62 +107,53 @@ data:
 | `autoStart`  | no       | `true` starts it on entering the cluster. Absent means no.    |
 | `id`         | no       | Stable identifier; derived from the fields above when omitted |
 
-From the list, **Share with team** writes a forward into the ConfigMap, and **Rename** changes its
-name there. Both read the current content before writing, so a colleague's change is not
-overwritten.
+From the list, **Share with team** writes a forward into the ConfigMap and **Rename** changes its
+name there. **Delete** asks for confirmation, and for a shared forward it offers to remove the entry
+from the ConfigMap as well — unchecked by default, since that takes it away from everyone. Without
+it, the forward is only stopped and the next refresh lists it again. All of these read the current
+content before writing, so a colleague's change is not overwritten.
 
 ### Permissions
 
-Reading the shared list needs `get` on that ConfigMap. Sharing, renaming and toggling auto-start
-need `update`. The **Create** button needs `create` on configmaps, and on namespaces when the
-namespace is missing. Everything degrades to a clear message plus a copyable manifest, so read-only
-users are not stuck.
+| Action                                             | Needs on the shared ConfigMap                                           |
+| -------------------------------------------------- | ----------------------------------------------------------------------- |
+| Reading the shared list                            | `get`                                                                   |
+| Sharing, renaming, un-sharing, toggling auto-start | `update`                                                                |
+| The **Create** button                              | `create` on configmaps, and on namespaces when the namespace is missing |
 
-## Install
+Everything degrades to a clear message plus a copyable manifest, so read-only users are not stuck.
 
-In Headlamp Desktop, open the Plugin Catalog, search for *Persistent Port Forwards* and click
-Install. Alternatively, download the tarball from the
-[latest release](https://github.com/ondrab1/headlamp-port-forwards/releases) and install it through
-the plugin manager.
+## Contributing
 
-Headlamp reads plugins at startup, so **restart the app** afterwards.
-
-To build from source instead:
+Issues and pull requests are welcome. There is no CLA and no template to fill in — for a bug, what
+broke and on which Headlamp version is enough.
 
 ```bash
-npm install
-npm run build
-```
-
-## Development
-
-```bash
-npm start     # watch, build and install on change
+npm start     # watch, build and install into the local Headlamp
 npm test      # unit tests
 npm run tsc   # type check (strict)
 npm run lint  # eslint, no warnings allowed
 npm run i18n  # extract translatable strings
 ```
 
-`npm start` copies the build into `~/Library/Application Support/Headlamp/plugins/<plugin-name>/`
-on macOS, `~/.config/Headlamp/plugins/<plugin-name>/` elsewhere. Restart Headlamp to pick up a new
-build; the plugin logs its build stamp to the console on load and shows it in its settings page, so
+CI runs `tsc`, `lint`, `test` and `build` on every pull request, so run them before pushing.
+
+`npm start` copies the build into `~/Library/Application Support/Headlamp/plugins/<plugin-name>/` on
+macOS and `~/.config/Headlamp/plugins/<plugin-name>/` elsewhere. Restart Headlamp to pick up a new
+build; the plugin logs its build stamp to the console on load and shows it on its settings page, so
 you can tell which build is running.
 
-The logic that decides what a row is — whether it is configured, shared, auto-starting, running —
-lives in `src/forwards.ts` with no React or Headlamp imports, and is covered by `src/forwards.test.ts`.
-Keep it that way: the awkward bugs in this plugin were all cases of two parts of the UI reaching
-different conclusions about the same forward.
+One design rule worth keeping: the logic that decides what a row is — configured, shared,
+auto-starting, running — lives in `src/forwards.ts` with no React or Headlamp imports, and is covered
+by `src/forwards.test.ts`. The awkward bugs in this plugin were all cases of two parts of the UI
+reaching different conclusions about the same forward.
 
-Port forwarding only works in the desktop app, so the page is unavailable in the browser build —
-same as Headlamp's own.
-
-See the [Headlamp plugin docs](https://headlamp.dev/docs/latest/development/plugins/) and the
-[plugin API reference](https://headlamp.dev/docs/latest/development/api/).
+Useful references: the [Headlamp plugin docs](https://headlamp.dev/docs/latest/development/plugins/)
+and the [plugin API reference](https://headlamp.dev/docs/latest/development/api/).
 
 ## Releasing
 
-Releases are built by CI. For each one:
+For maintainers. Releases are built by CI; for each one:
 
 1. Update `artifacthub-pkg.yml`: `version`, the tarball name in `archive-url`, and the `changes:`
    list (`kind` of `added`, `changed`, `fixed` or `removed`). That list is the changelog — Headlamp's
@@ -144,8 +163,8 @@ Releases are built by CI. For each one:
 3. Push a tag:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.5
+git push origin v0.1.5
 ```
 
 The workflow refuses to release if the tag and those two versions disagree, then runs the checks,
@@ -158,3 +177,7 @@ not match the released file and Headlamp would refuse to install it. To build on
 use `npm run package-release` — it stages the build under the package name first, whereas
 `headlamp-plugin package` would name the folder inside the tarball after this repository, and
 Headlamp would then load the release next to a development build instead of replacing it.
+
+## License
+
+[Apache-2.0](LICENSE)
