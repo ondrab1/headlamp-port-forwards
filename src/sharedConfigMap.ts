@@ -199,6 +199,28 @@ function sharedForwardKey(pf: SharedPortForward): string {
 }
 
 /**
+ * Writes a forward list back into a ConfigMap that was just read.
+ *
+ * The resourceVersion of that read travels with the update, so a genuinely
+ * concurrent write from a colleague fails loudly instead of being overwritten.
+ */
+function putForwards(
+  cluster: string,
+  current: KubeConfigMap,
+  forwards: SharedPortForward[]
+): Promise<unknown> {
+  const updated: KubeConfigMap = {
+    ...current,
+    data: {
+      ...(current.data || {}),
+      [SHARED_DATA_KEY]: `${JSON.stringify(forwards, null, 2)}\n`,
+    },
+  };
+
+  return (K8s.ResourceClasses.ConfigMap.apiEndpoint as any).put(updated, undefined, cluster);
+}
+
+/**
  * Adds a forward to a list, replacing any entry with the same identity.
  *
  * Pure so the merge can be tested without a cluster.
@@ -224,6 +246,18 @@ export function renameSharedForwardIn(
   return existing.map(pf => (sharedForwardKey(pf) === key ? { ...pf, name } : pf));
 }
 
+/**
+ * Drops the entry with the given identity.
+ *
+ * Pure so the rewrite can be tested without a cluster.
+ */
+export function removeSharedForwardFrom(
+  existing: SharedPortForward[],
+  key: string
+): SharedPortForward[] {
+  return existing.filter(pf => sharedForwardKey(pf) !== key);
+}
+
 /** The identity used to locate an entry inside the shared ConfigMap. */
 export function sharedForwardIdentity(pf: SharedPortForward): string {
   return sharedForwardKey(pf);
@@ -242,15 +276,7 @@ export async function setSharedAutoStart(
     sharedForwardKey(pf) === key ? { ...pf, autoStart } : pf
   );
 
-  const updated: KubeConfigMap = {
-    ...current,
-    data: {
-      ...(current.data || {}),
-      [SHARED_DATA_KEY]: `${JSON.stringify(updatedList, null, 2)}\n`,
-    },
-  };
-
-  return (K8s.ResourceClasses.ConfigMap.apiEndpoint as any).put(updated, undefined, cluster);
+  return putForwards(cluster, current, updatedList);
 }
 
 /**
@@ -268,15 +294,7 @@ export async function renameSharedForward(
   const current = await getConfigMap(cluster, ref.namespace, ref.name);
   const renamed = renameSharedForwardIn(readForWrite(current), sharedForwardKey(entry), name);
 
-  const updated: KubeConfigMap = {
-    ...current,
-    data: {
-      ...(current.data || {}),
-      [SHARED_DATA_KEY]: `${JSON.stringify(renamed, null, 2)}\n`,
-    },
-  };
-
-  return (K8s.ResourceClasses.ConfigMap.apiEndpoint as any).put(updated, undefined, cluster);
+  return putForwards(cluster, current, renamed);
 }
 
 /**
@@ -295,15 +313,24 @@ export async function addSharedForward(
   const current = await getConfigMap(cluster, ref.namespace, ref.name);
   const merged = mergeSharedForward(readForWrite(current), entry);
 
-  const updated: KubeConfigMap = {
-    ...current,
-    data: {
-      ...(current.data || {}),
-      [SHARED_DATA_KEY]: `${JSON.stringify(merged, null, 2)}\n`,
-    },
-  };
+  return putForwards(cluster, current, merged);
+}
 
-  return (K8s.ResourceClasses.ConfigMap.apiEndpoint as any).put(updated, undefined, cluster);
+/**
+ * Removes a forward from the shared ConfigMap, for everyone reading it.
+ *
+ * Reads first like the other writers, so an entry a colleague added since the
+ * last poll survives the removal of this one.
+ */
+export async function removeSharedForward(
+  cluster: string,
+  ref: SharedConfigMapRef,
+  entry: SharedPortForward
+): Promise<unknown> {
+  const current = await getConfigMap(cluster, ref.namespace, ref.name);
+  const remaining = removeSharedForwardFrom(readForWrite(current), sharedForwardKey(entry));
+
+  return putForwards(cluster, current, remaining);
 }
 
 /**

@@ -87,8 +87,8 @@ export interface ForwardTarget {
 /**
  * The forwards configured for a cluster, indexed by the id they get at runtime.
  *
- * Local ones are owned by the plugin settings; external ones come from the
- * shared ports URL and can only be changed in that JSON.
+ * Local ones are owned by the plugin settings; external ones live in the shared
+ * ConfigMap, which the plugin rewrites when the user asks it to.
  */
 export interface ConfiguredForwards {
   local: Map<string, SharedPortForward>;

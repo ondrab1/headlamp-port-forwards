@@ -12,10 +12,16 @@ import { useSnackbar } from 'notistack';
 import React from 'react';
 import { compareForwards, decorateRows, findConfigured, synthesizeMissingRows } from '../forwards';
 import { useConfiguredForwards, usePortForwardList } from '../hooks/usePortForwardList';
-import { addSharedForward, renameSharedForward, setSharedAutoStart } from '../sharedConfigMap';
+import {
+  addSharedForward,
+  removeSharedForward,
+  renameSharedForward,
+  setSharedAutoStart,
+} from '../sharedConfigMap';
 import { removePersistentForward, setPersistentName, store } from '../store';
 import { ListRow, PortForwardEntry } from '../types';
 import { describeError } from '../utils';
+import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import { NameForwardDialog } from './NameForwardDialog';
 import { ActionsCell, AutoStartCell, PersistCell, SelectionToolbar } from './PortForwardsCells';
 import { StartOnPortDialog } from './StartOnPortDialog';
@@ -27,7 +33,9 @@ export function PortForwardsList() {
   const { cluster, portForwards, pendingIds, start, stop, remove, runBulk } = usePortForwardList();
   const configured = useConfiguredForwards(cluster);
   const sharedRef = store.useConfig()()?.clusters?.[cluster]?.sharedConfigMap;
+  const canWriteShared = !!sharedRef?.namespace && !!sharedRef?.name;
   const [startDialogFor, setStartDialogFor] = React.useState<PortForwardEntry | null>(null);
+  const [deleteDialogFor, setDeleteDialogFor] = React.useState<ListRow | null>(null);
   const [nameDialog, setNameDialog] = React.useState<{
     portForward: ListRow;
     mode: 'share' | 'rename';
@@ -86,29 +94,42 @@ export function PortForwardsList() {
    * straight back as a synthetic stopped one and delete looked broken.
    */
   const deleteAction = React.useCallback(
-    async (items: PortForwardEntry[]) => {
+    async (items: PortForwardEntry[], unshare = false) => {
+      let unshared = 0;
       const errors = await runBulk(items, async pf => {
         const match = findConfigured(configured, pf);
         await remove(pf);
         if (match?.source === 'local') {
           removePersistentForward(cluster, match.entry);
         }
+        // Deliberately after the forward is gone, and only when asked: this one
+        // write is the whole team's list.
+        if (unshare && match?.source === 'external' && sharedRef?.namespace && sharedRef?.name) {
+          await removeSharedForward(cluster, sharedRef, match.entry);
+          unshared += 1;
+        }
       });
       reportErrors(errors, t('Failed to delete port forward'));
 
-      // Nothing we can delete on our side keeps these away - say so rather than
+      if (unshared > 0) {
+        configured.reloadShared();
+        enqueueSnackbar(t('Removed from the shared ConfigMap'), { variant: 'success' });
+        return;
+      }
+
+      // Nothing we deleted on our side keeps these away - say so rather than
       // letting the row reappear unexplained.
       const fromUrl = items.filter(pf => findConfigured(configured, pf)?.source === 'external');
       if (fromUrl.length > 0) {
         enqueueSnackbar(
           `${fromUrl.length} ${t(
-            'forward(s) are defined by the shared ports URL and stay listed'
+            'forward(s) are defined by the shared ConfigMap and stay listed'
           )}`,
           { key: 'portforward-external-kept', preventDuplicate: true, variant: 'info' }
         );
       }
     },
-    [runBulk, remove, reportErrors, t, configured, cluster, enqueueSnackbar]
+    [runBulk, remove, reportErrors, t, configured, cluster, sharedRef, enqueueSnackbar]
   );
 
   /** Appends the forward to the shared ConfigMap the whole team reads. */
@@ -375,7 +396,7 @@ export function PortForwardsList() {
                 row={row.original}
                 cluster={cluster}
                 onSetSharedAutoStart={
-                  sharedRef?.namespace && sharedRef?.name
+                  canWriteShared
                     ? enabled => sharedAutoStartAction(row.original, enabled)
                     : undefined
                 }
@@ -395,17 +416,12 @@ export function PortForwardsList() {
                 <ActionsCell
                   portForward={pf}
                   pending={pf.pending}
-                  canShare={
-                    !!sharedRef?.namespace &&
-                    !!sharedRef?.name &&
-                    pf.configuredSource !== 'external'
-                  }
+                  canShare={canWriteShared && pf.configuredSource !== 'external'}
                   onResume={() => resumeAction([pf])}
                   onStop={() => stopAction([pf])}
-                  onDelete={() => deleteAction([pf])}
+                  onDelete={() => setDeleteDialogFor(pf)}
                   canRename={
-                    pf.configuredSource === 'local' ||
-                    (!!pf.configuredSource && !!sharedRef?.namespace && !!sharedRef?.name)
+                    pf.configuredSource === 'local' || (!!pf.configuredSource && canWriteShared)
                   }
                   onShare={() => setNameDialog({ portForward: pf, mode: 'share' })}
                   onRename={() => setNameDialog({ portForward: pf, mode: 'rename' })}
@@ -447,6 +463,33 @@ export function PortForwardsList() {
             shareAction(pending.portForward, name);
           } else {
             renameAction(pending.portForward, name);
+          }
+        }}
+      />
+      <ConfirmDeleteDialog
+        open={!!deleteDialogFor}
+        target={
+          deleteDialogFor
+            ? `${deleteDialogFor.serviceNamespace || deleteDialogFor.namespace}/${
+                deleteDialogFor.service || deleteDialogFor.pod
+              }:${deleteDialogFor.targetPort}`
+            : ''
+        }
+        label={deleteDialogFor?.label}
+        shared={
+          deleteDialogFor?.configuredSource === 'external'
+            ? {
+                location: `${sharedRef?.namespace}/${sharedRef?.name}`,
+                writable: canWriteShared,
+              }
+            : undefined
+        }
+        onCancel={() => setDeleteDialogFor(null)}
+        onConfirm={unshare => {
+          const pf = deleteDialogFor;
+          setDeleteDialogFor(null);
+          if (pf) {
+            deleteAction([pf], unshare);
           }
         }}
       />
