@@ -28,65 +28,14 @@ jobs:
       - name: Check the built plugin is loadable
         run: test -s dist/main.js
 
-  # ArtifactHub reads this repository and hands what it finds to Headlamp's
-  # in-app catalog, so every manifest under releases/ is an install offered to
-  # users. One pointing at an artifact that is missing, or whose checksum does
-  # not match it, is a broken install - and nothing else notices, because the
-  # plugin itself builds and tests just fine. The whole history is checked, not
-  # just the newest: a release asset deleted years later breaks an entry that
-  # nobody has touched since.
+  # Every version the catalog offers must actually be installable. The check
+  # lives in scripts/check-catalog.sh so that the release workflow runs the same
+  # one against the entry it has just written, and so a maintainer can run it
+  # before pushing a catalog change.
   catalog:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Every advertised release exists and matches its checksum
-        run: |
-          status=0
-
-          for manifest in releases/*/artifacthub-pkg.yml; do
-            folder=$(basename "$(dirname "$manifest")")
-            version=$(grep -m1 '^version:' "$manifest" | awk '{print $2}')
-            url=$(grep -m1 'archive-url:' "$manifest" | sed 's/.*"\(.*\)"/\1/')
-            declared=$(grep -m1 'archive-checksum:' "$manifest" | sed 's/.*"SHA256:\(.*\)"/\1/')
-
-            if [ "$folder" != "$version" ]; then
-              echo "::error file=$manifest::Folder says $folder, manifest says $version"
-              status=1
-              continue
-            fi
-
-            expected="persistent-port-forwards-$version.tar.gz"
-            case "$url" in
-              *"$expected") ;;
-              *)
-                echo "::error file=$manifest::archive-url does not point at $expected"
-                status=1
-                continue
-                ;;
-            esac
-
-            if ! curl -fsSL "$url" -o artifact.tar.gz; then
-              echo "::error file=$manifest::archive-url does not resolve. Version $version is offered by the catalog but cannot be downloaded."
-              status=1
-              continue
-            fi
-
-            actual=$(sha256sum artifact.tar.gz | awk '{print $1}')
-            if [ "$actual" != "$declared" ]; then
-              echo "::error file=$manifest::Checksum mismatch. Declared $declared, downloaded $actual - Headlamp refuses an install on this."
-              status=1
-              continue
-            fi
-
-            echo "$version ok"
-          done
-
-          # A stray artifacthub-pkg.yml outside releases/ would register a
-          # second copy of whatever version it names.
-          if [ -e artifacthub-pkg.yml ]; then
-            echo "::error::artifacthub-pkg.yml in the repository root is indexed as its own package version. Edit artifacthub-pkg.template.yml instead."
-            status=1
-          fi
-
-          exit $status
+        run: ./scripts/check-catalog.sh

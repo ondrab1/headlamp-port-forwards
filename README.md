@@ -188,9 +188,12 @@ Two rules follow, and CI enforces both:
   offering an install that 404s. Between the tag and the publish, `package.json` is therefore a
   version ahead of `releases/`, and that is the intended state.
 
-CI downloads every artifact `releases/` points at and checks it against the recorded checksum, so a
-catalog entry that has drifted out of step — including an old release whose asset was deleted years
-later — shows up as a red `main` instead of as a failed install for a user.
+`scripts/check-catalog.sh` downloads every artifact `releases/` points at and checks it against the
+recorded checksum, so a catalog entry that has drifted out of step — including an old release whose
+asset was deleted years later — shows up as a red `main` instead of as a failed install for a user.
+Run it by hand before pushing a catalog change; CI runs it on `main`, and the release workflow runs
+it once more on the entry it has just written. That last run matters because a push made with
+`GITHUB_TOKEN` does not start a workflow, so the workflow's own commit never reaches CI on its own.
 
 If a tag ever ends up without a run, use the workflow's **Run workflow** button and give it the tag
 name, rather than deleting and re-pushing the tag. Do it promptly: ArtifactHub keeps whatever it saw

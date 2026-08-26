@@ -174,3 +174,13 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Publish $TAG to ArtifactHub"
           git push origin main
+
+      # A push made with GITHUB_TOKEN does not start a workflow - GitHub stops
+      # runs from triggering runs - so the commit above never reaches CI's
+      # catalog job on its own, and the entry this release just wrote would go
+      # unchecked until somebody happened to push to main for another reason.
+      # That is the gap 0.1.5 fell through. Checking it here closes it: the
+      # working tree is main as just pushed, so this validates the new entry
+      # against the artifact published minutes ago.
+      - name: The entry just written resolves to the artifact just published
+        run: ./scripts/check-catalog.sh

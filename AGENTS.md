@@ -166,9 +166,11 @@ root is worse still — ArtifactHub indexes it as a package version of its own, 
 one.
 
 Before pushing, run what CI runs: `npm run tsc && npm run lint && npm test && npm run build`.
-The separate `catalog` job downloads every artifact `releases/` points at and checks it against
-the recorded checksum, so a catalog entry that has drifted — including an old release whose
-asset was deleted later — surfaces as a red `main` instead of as a failed install for a user.
+For anything touching `releases/`, also run `./scripts/check-catalog.sh` — it downloads every
+artifact the catalog points at and checks it against the recorded checksum, so an entry that has
+drifted, including an old release whose asset was deleted later, surfaces as a red `main` rather
+than as a failed install. CI runs that same script, and so does the release workflow on the entry
+it has just written.
 
 ## Best Practices
 
