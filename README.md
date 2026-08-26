@@ -162,8 +162,8 @@ For maintainers. Releases are built and published by CI; for each one:
 3. Commit, then push a tag:
 
 ```bash
-git tag v0.1.5
-git push origin main v0.1.5
+git tag v0.1.6
+git push origin main v0.1.6
 ```
 
 That is the whole manual part. The workflow refuses to release if the tag and `package.json`
@@ -193,7 +193,12 @@ catalog entry that has drifted out of step — including an old release whose as
 later — shows up as a red `main` instead of as a failed install for a user.
 
 If a tag ever ends up without a run, use the workflow's **Run workflow** button and give it the tag
-name, rather than deleting and re-pushing the tag.
+name, rather than deleting and re-pushing the tag. Do it promptly: ArtifactHub keeps whatever it saw
+first for a version number and will not re-read that version afterwards, so once it has indexed the
+version the run is no longer able to correct it. That is what happened to 0.1.5 — an Actions outage
+swallowed its trigger, the catalog indexed the version anyway, and the only way out was to withdraw
+it by deleting `releases/0.1.5/` and shipping the same code as 0.1.6. Withdrawing is the remedy when
+a version is already indexed and wrong; a version number is only ever published once.
 
 Building in CI is deliberate: `tar` records file timestamps, so a checksum from a local build would
 not match the released file and Headlamp would refuse to install it. To build one locally anyway,
