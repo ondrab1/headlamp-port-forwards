@@ -54,6 +54,22 @@ for manifest in releases/*/artifacthub-pkg.yml; do
     continue
   fi
 
+  # ArtifactHub takes a version's documentation from a README.md next to its
+  # manifest. Without one the catalog page is a bare list of fields, which is
+  # what happened to every version between the move to releases/ and the
+  # script that now renders it - and nothing failed, because the plugin builds
+  # and installs fine either way.
+  readme="$(dirname "$manifest")/README.md"
+  if [ ! -s "$readme" ]; then
+    fail "$manifest" "No README.md beside it, so the catalog shows this version with no documentation. Render one with scripts/catalog-readme.mjs."
+  # The catalog page is read by someone deciding whether to install the plugin;
+  # how to contribute to it or cut a release of it belongs on GitHub. The
+  # renderer drops those sections by heading, so a heading renamed in README.md
+  # would put them back, and this is what notices.
+  elif grep -qE '^## (Contributing|Releasing)' "$readme"; then
+    fail "$readme" "Carries a Contributing or Releasing section, which is for maintainers and not for the catalog page. Re-render it with scripts/catalog-readme.mjs."
+  fi
+
   expected="persistent-port-forwards-$version.tar.gz"
   case "$url" in
     *"$expected") ;;

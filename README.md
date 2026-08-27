@@ -188,6 +188,15 @@ Two rules follow, and CI enforces both:
   offering an install that 404s. Between the tag and the publish, `package.json` is therefore a
   version ahead of `releases/`, and that is the intended state.
 
+A version's documentation comes from a `README.md` in the same folder as its manifest — that is the
+only place ArtifactHub looks, no field points at one elsewhere, and a symlink is rejected because
+the tracker reads regular files only. `scripts/catalog-readme.mjs` renders this README into that
+copy: relative screenshot and licence links become absolute ones pinned to the release tag, since a
+relative link on a catalog page resolves against `artifacthub.io`, and the sections written for
+maintainers — Contributing and this one — are dropped, because a catalog page is read by someone
+deciding whether to install the plugin. The workflow runs it alongside the manifest, from the tag
+rather than from `main`, so each version's page keeps showing what that version shipped with.
+
 `scripts/check-catalog.sh` downloads every artifact `releases/` points at and checks it against the
 recorded checksum, so a catalog entry that has drifted out of step — including an old release whose
 asset was deleted years later — shows up as a red `main` instead of as a failed install for a user.

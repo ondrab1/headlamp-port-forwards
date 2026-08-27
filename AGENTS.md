@@ -144,9 +144,10 @@ breaking them.
 Cutting a release is three steps: update `changes:` in `artifacthub-pkg.template.yml`, bump
 `version` in `package.json`, then `git push origin main vX.Y.Z`. CI does everything else.
 
-**Never hand-write a file under `releases/`.** The workflow generates
-`releases/<version>/artifacthub-pkg.yml` itself, and only after `gh release create` has
-succeeded, so that no version is advertised before the artifact it names exists. Between the tag
+**Never hand-write a file under `releases/`.** The workflow generates both files a version folder
+holds — `artifacthub-pkg.yml` and the `README.md` that ArtifactHub shows as that version's
+documentation, rendered from the root README by `scripts/catalog-readme.mjs` — and only after
+`gh release create` has succeeded, so that no version is advertised before the artifact it names exists. Between the tag
 and the publish, `package.json` sits one version ahead of `releases/` — that is the intended
 state, not a step someone forgot. A hand-written entry is how 0.1.5 came to offer a download
 that 404s.

@@ -162,7 +162,18 @@ jobs:
           print(f'Wrote {path}')
           PY
 
-          # add, not commit -am: the file is new, and -a would skip it.
+          # ArtifactHub reads a version's documentation from a README.md in the
+          # same folder as its manifest, and from nowhere else - no field points
+          # at one elsewhere, and the tracker refuses a symlink. Rendered from
+          # the tag rather than from main, so the page shows what this version
+          # shipped with even if main has moved on.
+          # Read first, render second: a pipeline hides git's exit status, and
+          # the failure that hides is an empty README published as the docs.
+          readme=$(git show "$TAG:README.md")
+          printf '%s\n' "$readme" |
+            node scripts/catalog-readme.mjs "$TAG" - > "releases/${TAG#v}/README.md"
+
+          # add, not commit -am: the files are new, and -a would skip them.
           git add releases
 
           if git diff --cached --quiet; then
