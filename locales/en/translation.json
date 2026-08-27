@@ -67,7 +67,7 @@
   "Local": "Local",
   "Auto-start on": "Auto-start on",
   "Auto-start off": "Auto-start off",
-  "External": "External",
+  "Shared": "Shared",
   "Could not create the ConfigMap": "Could not create the ConfigMap",
   "Set a namespace and name to read shared forwards from the cluster.": "Set a namespace and name to read shared forwards from the cluster.",
   "Create namespace + ConfigMap": "Create namespace + ConfigMap",

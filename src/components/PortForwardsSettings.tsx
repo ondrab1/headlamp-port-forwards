@@ -283,7 +283,7 @@ export function PortForwardsSettings(props: any) {
                         </ListItem>
                       </React.Fragment>
                     ))}
-                    {/* External forwards from URL */}
+                    {/* Shared forwards from the cluster */}
                     {externalList.map((pf: SharedPortForward, idx: number) => (
                       <React.Fragment key={`external-${idx}`}>
                         {(idx > 0 || localForwards.length > 0) && <Divider />}
@@ -313,7 +313,7 @@ export function PortForwardsSettings(props: any) {
                                     fontSize: '0.65rem',
                                   }}
                                 >
-                                  {t('External')}
+                                  {t('Shared')}
                                 </Typography>
                               </Box>
                             }
